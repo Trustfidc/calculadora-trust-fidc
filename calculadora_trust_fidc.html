@@ -295,13 +295,39 @@ function r2(n){ return Math.round(n*100)/100; }
 // ── Init: ler params URL ───────────────────────
 (function(){
   var p   = new URLSearchParams(location.search);
-  var map = {processo:'numero_processo', autor:'autor', advogado:'advogado', agente:'agente'};
   var hit = false;
+
+  // Mapeamento direto de parâmetros para campos
+  var map = {processo:'numero_processo', autor:'autor', advogado:'advogado', agente:'agente'};
   for(var k in map){
     var v = p.get(k);
-    if(v){ el(map[k]).value = decodeURIComponent(v); el(map[k]).style.background='#f0fdf4'; hit=true; }
+    if(v && v !== 'NaN' && v !== 'undefined'){
+      el(map[k]).value = decodeURIComponent(v.replace(/\+/g,' '));
+      el(map[k]).style.background='#f0fdf4';
+      hit=true;
+    }
   }
-  if(p.get('credito')){ el('tipo_credito').value = decodeURIComponent(p.get('credito')); hit=true; }
+
+  // Suporte ao campo combinado "autor_advogado" que vem do Form 1
+  // O Form 1 tem campo único "Nome do Autor / Advogado"
+  // Coloca no campo autor se autor não veio separado
+  var autorAdv = p.get('autor_advogado') || p.get('nome_autor_advogado');
+  if(autorAdv && autorAdv !== 'NaN'){
+    var decoded = decodeURIComponent(autorAdv.replace(/\+/g,' '));
+    if(!el('autor').value) { el('autor').value = decoded; el('autor').style.background='#f0fdf4'; }
+    if(!el('advogado').value) { el('advogado').value = decoded; el('advogado').style.background='#f0fdf4'; }
+    hit = true;
+  }
+
+  // Valor sentença vindo da URL
+  var vs = p.get('valor_sentenca') || p.get('valor');
+  if(vs && vs !== 'NaN' && parseFloat(vs) > 0){
+    el('valor_sentenca').value = parseFloat(vs);
+    el('valor_sentenca').style.background='#f0fdf4';
+    hit=true;
+  }
+
+  if(p.get('credito')){ el('tipo_credito').value = decodeURIComponent(p.get('credito').replace(/\+/g,' ')); hit=true; }
   if(hit) el('urlHint').style.display = 'block';
   setTipo(p.get('tipo') || 'autor');
   atualizarWH();
