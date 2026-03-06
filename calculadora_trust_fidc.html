@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trust FIDC — Calculadora</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh;}
+
+.header{background:#0a1628;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #c9a84c;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:10px;}
+.header h1{font-size:21px;color:#c9a84c;letter-spacing:2px;}
+.header p{font-size:11px;color:#9ca3af;margin-top:1px;}
+.hbtns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+#wstatus{font-size:11px;color:#9ca3af;display:flex;align-items:center;gap:5px;}
+.dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;}
+.dot.ok{background:#22c55e;}
+
+button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:bold;padding:7px 14px;transition:opacity .15s;}
+.btn-wh{background:none;border:1px solid #c9a84c;color:#c9a84c;}
+.btn-wh:hover{background:#c9a84c22;}
+.btn-save{background:#c9a84c;color:#0a1628;}
+.btn-save:hover{background:#e0bb5e;}
+.btn-save:disabled{background:#6b7280;cursor:not-allowed;}
+
+.overlay{display:none;position:fixed;inset:0;background:#00000099;z-index:200;justify-content:center;align-items:center;}
+.overlay.open{display:flex;}
+.modal{background:white;border-radius:10px;padding:26px;width:460px;max-width:95vw;border-top:4px solid #c9a84c;}
+.modal h3{font-size:16px;color:#0a1628;margin-bottom:8px;}
+.modal small{font-size:12px;color:#6b7280;}
+.modal input{width:100%;border:1px solid #d1d5db;border-radius:6px;padding:9px 12px;font-size:13px;margin:6px 0 14px;display:block;}
+.modal input:focus{outline:none;border-color:#c9a84c;}
+.mbtns{display:flex;gap:8px;justify-content:flex-end;}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#0a1628;color:white;padding:11px 16px;border-radius:8px;border-left:4px solid #c9a84c;font-size:13px;z-index:300;transform:translateY(60px);opacity:0;transition:all .3s;max-width:300px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{border-left-color:#22c55e;}
+.toast.err{border-left-color:#ef4444;}
+
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px;}
+
+/* TIPO */
+.tipo-sel{display:flex;background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:16px;box-shadow:0 1px 3px #0001;}
+.tbtn{flex:1;padding:13px 8px;text-align:center;background:white;border:none;border-right:1px solid #e5e7eb;cursor:pointer;transition:background .15s;}
+.tbtn:last-child{border-right:none;}
+.tbtn .ti{font-size:18px;display:block;margin-bottom:3px;}
+.tbtn .tn{font-size:13px;font-weight:bold;color:#6b7280;display:block;}
+.tbtn .td{font-size:10px;color:#9ca3af;display:block;}
+.tbtn.active{background:#0a1628;}
+.tbtn.active .tn{color:#c9a84c;}
+.tbtn.active .td{color:#9ca3af;}
+.tbtn:not(.active):hover{background:#f9fafb;}
+
+/* CARDS */
+.card{background:white;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px #0001;border:1px solid #e5e7eb;margin-bottom:14px;}
+.ct{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#c9a84c;border-bottom:1px solid #f3f4f6;padding-bottom:9px;margin-bottom:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.badge{padding:1px 7px;border-radius:20px;font-size:10px;font-weight:bold;background:#c9a84c22;color:#c9a84c;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:640px){.g2,.g3{grid-template-columns:1fr;}}
+
+/* FIELDS */
+.f{margin-bottom:10px;}
+.f:last-child{margin-bottom:0;}
+.f label{display:block;font-size:11px;font-weight:bold;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;}
+.f input,.f select{width:100%;border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:14px;color:#1a1a2e;background:white;}
+.f input:focus,.f select:focus{outline:none;border-color:#c9a84c;box-shadow:0 0 0 2px #c9a84c22;}
+.f input[readonly]{background:#f9fafb;color:#374151;cursor:default;border-color:#e5e7eb;font-weight:bold;}
+.f .hint{font-size:10px;color:#9ca3af;margin-top:2px;}
+.f-desp label{color:#b45309;}
+.f-desp input{border-color:#c9a84c;background:#fffbeb;}
+.sep{height:1px;background:#f3f4f6;margin:9px 0;}
+
+/* RESULTADO */
+.rcard{background:#0a1628;border-radius:10px;padding:18px 20px;margin-bottom:14px;border:1px solid #1e3a5f;}
+.rcard .ct{border-bottom-color:#1e3a5f;}
+.ri .rl{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.ri .rv{font-size:26px;font-weight:bold;color:#c9a84c;}
+.ri .rf{font-size:10px;color:#4b6a8f;margin-top:2px;}
+.ri .rtx{font-size:13px;color:#9ca3af;margin-top:5px;}
+.ri .rtx span{color:#c9a84c;font-weight:bold;}
+
+/* RESUMO */
+.rtbl{width:100%;border-collapse:collapse;font-size:13px;}
+.rtbl td{padding:6px 10px;border-bottom:1px solid #f3f4f6;}
+.rtbl tr:last-child td{border-bottom:none;}
+.rtbl .lc{color:#6b7280;}
+.rtbl .vc{text-align:right;font-weight:bold;}
+.rtbl .tot td{border-top:2px solid #c9a84c;padding-top:9px;}
+.rtbl .tot .vc{color:#c9a84c;font-size:14px;}
+.rtbl tr:nth-child(even) td{background:#f9fafb;}
+
+.urlinfo{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:11px 14px;font-size:12px;color:#0369a1;margin-bottom:14px;display:none;}
+.makehint{border:1px dashed #c9a84c;}
+.makehint p{font-size:12px;color:#6b7280;line-height:1.9;}
+.makehint code{background:#f0f4f8;padding:4px 7px;border-radius:4px;font-family:monospace;font-size:11px;display:block;word-break:break-all;color:#1a3056;margin:6px 0;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>TRUST FIDC</h1><p>Calculadora de Propostas</p></div>
+  <div class="hbtns">
+    <div id="wstatus"><span class="dot" id="wdot"></span><span id="wtxt">Webhook não configurado</span></div>
+    <button class="btn-wh" onclick="abrirCfg()">⚙️ Webhook</button>
+    <button class="btn-save" id="btnSalvar" onclick="salvar()">💾 Salvar no Pipeline</button>
+  </div>
+</div>
+
+<div class="overlay" id="cfgModal">
+  <div class="modal">
+    <h3>⚙️ Configurar Webhook Make</h3>
+    <small>Cole a URL gerada no Make.com (passo 2.2 do Guia de Integração)</small>
+    <input type="url" id="wInput" placeholder="https://hook.eu1.make.com/xxxxxxxx">
+    <div class="mbtns">
+      <button style="background:#f3f4f6;color:#374151;" onclick="fecharCfg()">Cancelar</button>
+      <button style="background:#0a1628;color:white;" onclick="salvarCfg()">Salvar</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="wrap">
+
+<div class="urlinfo" id="urlHint">ℹ️ <strong>Dados pré-preenchidos pelo Make.</strong> Confira e preencha apenas os dados financeiros.</div>
+
+<!-- TIPO SELECTOR -->
+<div class="tipo-sel">
+  <button class="tbtn active" id="tb-autor" onclick="setTipo('autor')">
+    <span class="ti">👤</span><span class="tn">Autor</span><span class="td">Proposta ao cedente</span>
+  </button>
+  <button class="tbtn" id="tb-honorarios" onclick="setTipo('honorarios')">
+    <span class="ti">⚖️</span><span class="tn">Honorários</span><span class="td">Proposta ao advogado</span>
+  </button>
+  <button class="tbtn" id="tb-sucumbencia" onclick="setTipo('sucumbencia')">
+    <span class="ti">📋</span><span class="tn">Sucumbência</span><span class="td">Hon. sucumbenciais</span>
+  </button>
+</div>
+
+<!-- IDENTIFICAÇÃO -->
+<div class="card">
+  <div class="ct">📋 Identificação do Processo <span class="badge">preenchido pelo agente</span></div>
+  <div class="g3">
+    <div class="f"><label>Número do Processo</label><input type="text" id="numero_processo" placeholder="0000000-00.0000.0.00.0000"></div>
+    <div class="f"><label>Nome do Autor</label><input type="text" id="autor" placeholder="Nome completo"></div>
+    <div class="f"><label>Nome do Advogado</label><input type="text" id="advogado" placeholder="Dr(a). Nome"></div>
+    <div class="f"><label>Agente Responsável</label><input type="text" id="agente" placeholder="Nome do agente"></div>
+    <div class="f"><label>Tipo de Crédito</label><input type="text" id="tipo_credito" readonly></div>
+    <div class="f">
+      <label>Obs INSS</label>
+      <select id="obs_inss">
+        <option value="">Selecione...</option>
+        <option>INSS HOMOLOGOU</option>
+        <option>INSS NÃO HOMOLOGOU</option>
+        <option>N/A</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- FINANCEIRO + NEGOCIAÇÃO -->
+<div class="g2">
+  <div class="card">
+    <div class="ct">💰 Dados Financeiros</div>
+
+    <div class="f"><label>Valor Sentença (R$)</label>
+      <input type="number" id="valor_sentenca" placeholder="0.00" min="0" step="0.01" oninput="calcular()">
+    </div>
+
+    <div class="f" id="b_hon_pct">
+      <label>% Honorários</label>
+      <select id="perc_hon" onchange="calcular()">
+        <option value="30">30%</option>
+        <option value="32">32%</option>
+        <option value="35">35%</option>
+        <option value="40">40%</option>
+      </select>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="f" id="b_val_autor"><label>Valor Autor (calculado)</label><input type="text" id="val_autor" readonly placeholder="—"></div>
+    <div class="f" id="b_val_hon" style="display:none"><label>Valor Honorários (calculado)</label><input type="text" id="val_hon" readonly placeholder="—"></div>
+    <div class="f" id="b_val_suc" style="display:none"><label>Valor Sucumbência (R$)</label><input type="number" id="valor_suc" placeholder="0.00" min="0" step="0.01" oninput="calcular()"></div>
+
+    <div class="sep"></div>
+    <div class="f">
+      <label>Hon. Destacados</label>
+      <select id="hon_destacados"><option value="Não">Não</option><option value="Sim">Sim</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📊 Negociação</div>
+    <div class="f" id="b_da"><label>% Deságio Autor</label>
+      <input type="number" id="desagio_autor" placeholder="Ex: 35" min="0" max="100" step="0.1" oninput="calcular()">
+      <div class="hint">Tipicamente 28% a 42%</div>
+    </div>
+    <div class="f" id="b_dd" style="display:none"><label>% Deságio Advogado</label>
+      <input type="number" id="desagio_adv" placeholder="Ex: 30" min="0" max="100" step="0.1" oninput="calcular()">
+      <div class="hint">Tipicamente 25% a 40%</div>
+    </div>
+    <div class="sep"></div>
+    <div class="f f-desp" id="b_desp_a">
+      <label>⚠️ Despesas Cartório — Autor (R$)</label>
+      <input type="number" id="desp_autor" placeholder="Ex: 417.00" min="0" step="0.01" oninput="calcular()">
+      <div class="hint">Valor fixo — digitar manualmente</div>
+    </div>
+    <div class="f f-desp" id="b_desp_h" style="display:none">
+      <label>⚠️ Despesas Cartório — Honorários (R$)</label>
+      <input type="number" id="desp_hon" placeholder="Ex: 500.00" min="0" step="0.01" oninput="calcular()">
+      <div class="hint">Valor fixo — digitar manualmente</div>
+    </div>
+    <div class="f f-desp" id="b_desp_s" style="display:none">
+      <label>⚠️ Despesas Cartório — Sucumbência (R$)</label>
+      <input type="number" id="desp_suc" placeholder="Ex: 500.00" min="0" step="0.01" oninput="calcular()">
+      <div class="hint">Valor fixo — digitar manualmente</div>
+    </div>
+    <div class="sep"></div>
+    <div class="f"><label>Prazo Previsto</label><input type="date" id="prazo" oninput="calcular()"></div>
+  </div>
+</div>
+
+<!-- RESULTADO — cada div começa hidden, JS mostra só o correto -->
+<div class="rcard">
+  <div class="ct" style="color:#c9a84c;border-bottom-color:#1e3a5f;">🏆 Proposta Final</div>
+  <div id="res_autor" style="display:none" class="ri">
+    <div class="rl">Proposta Autor</div>
+    <div class="rv" id="rv_a">R$ —</div>
+    <div class="rf">= Val. Autor × (1 − Deság. Autor) − Despesas Cartório</div>
+    <div class="rtx">Taxa efetiva: <span id="rtx_a">—</span></div>
+  </div>
+  <div id="res_hon" style="display:none" class="ri">
+    <div class="rl">Proposta Honorários</div>
+    <div class="rv" id="rv_h">R$ —</div>
+    <div class="rf">= Val. Hon. × (1 − Deság. Adv.) − Despesas Cartório</div>
+    <div class="rtx">Taxa efetiva: <span id="rtx_h">—</span></div>
+  </div>
+  <div id="res_suc" style="display:none" class="ri">
+    <div class="rl">Proposta Sucumbência</div>
+    <div class="rv" id="rv_s">R$ —</div>
+    <div class="rf">= Val. Suc. × (1 − Deság. Adv.) − Despesas Cartório</div>
+    <div class="rtx">Taxa efetiva: <span id="rtx_s">—</span></div>
+  </div>
+</div>
+
+<!-- RESUMO -->
+<div class="card">
+  <div class="ct">📝 Resumo</div>
+  <table class="rtbl" id="tbl_resumo">
+    <tbody>
+      <tr><td class="lc">Tipo</td><td class="vc" id="rs_tipo">—</td></tr>
+      <tr><td class="lc">Valor Sentença</td><td class="vc" id="rs_sent">—</td></tr>
+      <tr id="rr_va"><td class="lc">Valor Autor</td><td class="vc" id="rs_va">—</td></tr>
+      <tr id="rr_vh"><td class="lc">Valor Honorários</td><td class="vc" id="rs_vh">—</td></tr>
+      <tr id="rr_vs"><td class="lc">Valor Sucumbência</td><td class="vc" id="rs_vs">—</td></tr>
+      <tr id="rr_da"><td class="lc">Deságio Autor</td><td class="vc" id="rs_da">—</td></tr>
+      <tr id="rr_dd"><td class="lc">Deságio Advogado</td><td class="vc" id="rs_dd">—</td></tr>
+      <tr id="rr_dea"><td class="lc" style="color:#b45309">Despesas Cartório</td><td class="vc" style="color:#b45309" id="rs_dea">—</td></tr>
+      <tr id="rr_pa" class="tot"><td class="lc">Proposta Autor</td><td class="vc" id="rs_pa">—</td></tr>
+      <tr id="rr_ph" class="tot"><td class="lc">Proposta Honorários</td><td class="vc" id="rs_ph">—</td></tr>
+      <tr id="rr_ps" class="tot"><td class="lc">Proposta Sucumbência</td><td class="vc" id="rs_ps">—</td></tr>
+      <tr id="rr_ta"><td class="lc">Taxa Efetiva</td><td class="vc" id="rs_ta">—</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- URL HINT -->
+<div class="card makehint">
+  <div class="ct">🔗 Pré-preenchimento via URL — para o Make</div>
+  <p>Monte esta URL com os dados da solicitação e envie para a Vanessa via WhatsApp:<br>
+  <code>calculadora_trust_fidc.html?tipo=autor&processo=0001234-56.2024.8.26.0000&autor=João+Silva&advogado=Dr.+Pedro&agente=Felipe&credito=Trabalhista</code>
+  Parâmetros: <code>tipo</code> (autor/honorarios/sucumbencia) · <code>processo</code> · <code>autor</code> · <code>advogado</code> · <code>agente</code> · <code>credito</code></p>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ── Estado global ──────────────────────────────
+var TIPO = 'autor';
+var WH   = localStorage.getItem('trust_wh') || '';
+var C    = {};
+
+// ── Helpers DOM ────────────────────────────────
+function el(id){ return document.getElementById(id); }
+function num(id){ var v = parseFloat(el(id).value); return isNaN(v) ? 0 : v; }
+function val(id){ return el(id).value; }
+function txt(id,t){ el(id).textContent = t; }
+function show(id){ el(id).style.display = ''; }
+function hide(id){ el(id).style.display = 'none'; }
+function fmt(n){ return 'R\u00a0' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtN(n){ return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function r2(n){ return Math.round(n*100)/100; }
+
+// ── Init: ler params URL ───────────────────────
+(function(){
+  var p   = new URLSearchParams(location.search);
+  var hit = false;
+
+  // Captura record_id do Airtable se vier na URL
+  var _rid = p.get("record_id") || p.get("airtable_id") || "";
+  window._airtableRecordId = _rid;
+  console.log("record_id capturado:", _rid);
+
+  // Mapeamento direto de parâmetros para campos
+  var map = {processo:'numero_processo', autor:'autor', advogado:'advogado', agente:'agente'};
+  for(var k in map){
+    var v = p.get(k);
+    if(v && v !== 'NaN' && v !== 'undefined'){
+      el(map[k]).value = decodeURIComponent(v.replace(/\+/g,' '));
+      el(map[k]).style.background='#f0fdf4';
+      hit=true;
+    }
+  }
+
+  // Suporte ao campo combinado "autor_advogado" que vem do Form 1
+  // O Form 1 tem campo único "Nome do Autor / Advogado"
+  // Coloca no campo autor se autor não veio separado
+  var autorAdv = p.get('autor_advogado') || p.get('nome_autor_advogado');
+  if(autorAdv && autorAdv !== 'NaN'){
+    var decoded = decodeURIComponent(autorAdv.replace(/\+/g,' '));
+    if(!el('autor').value) { el('autor').value = decoded; el('autor').style.background='#f0fdf4'; }
+    if(!el('advogado').value) { el('advogado').value = decoded; el('advogado').style.background='#f0fdf4'; }
+    hit = true;
+  }
+
+  // Valor sentença vindo da URL
+  var vs = p.get('valor_sentenca') || p.get('valor');
+  if(vs && vs !== 'NaN' && parseFloat(vs) > 0){
+    el('valor_sentenca').value = parseFloat(vs);
+    el('valor_sentenca').style.background='#f0fdf4';
+    hit=true;
+  }
+
+  if(p.get('credito')){ el('tipo_credito').value = decodeURIComponent(p.get('credito').replace(/\+/g,' ')); hit=true; }
+  if(hit) el('urlHint').style.display = 'block';
+  setTipo(p.get('tipo') || 'autor');
+  atualizarWH();
+})();
+
+// ── setTipo ────────────────────────────────────
+function setTipo(tipo){
+  TIPO = tipo;
+
+  // botões
+  ['autor','honorarios','sucumbencia'].forEach(function(t){
+    el('tb-'+t).className = 'tbtn' + (t===tipo ? ' active' : '');
+  });
+
+  // Tipo de Crédito display (só se não veio da URL)
+  if(!new URLSearchParams(location.search).get('credito')){
+    var lab = {autor:'Autor', honorarios:'Honorários', sucumbencia:'Sucumbência'};
+    el('tipo_credito').value = lab[tipo];
+  }
+
+  // Campos financeiros
+  tipo==='sucumbencia' ? hide('b_hon_pct')  : show('b_hon_pct');
+  tipo==='autor'       ? show('b_val_autor') : hide('b_val_autor');
+  tipo==='honorarios'  ? show('b_val_hon')   : hide('b_val_hon');
+  tipo==='sucumbencia' ? show('b_val_suc')   : hide('b_val_suc');
+
+  // Deságios
+  tipo==='autor'  ? show('b_da') : hide('b_da');
+  tipo!=='autor'  ? show('b_dd') : hide('b_dd');
+
+  // Despesas
+  tipo==='autor'       ? show('b_desp_a') : hide('b_desp_a');
+  tipo==='honorarios'  ? show('b_desp_h') : hide('b_desp_h');
+  tipo==='sucumbencia' ? show('b_desp_s') : hide('b_desp_s');
+
+  // Resultado — só um visível
+  hide('res_autor'); hide('res_hon'); hide('res_suc');
+  if(tipo==='autor')       show('res_autor');
+  if(tipo==='honorarios')  show('res_hon');
+  if(tipo==='sucumbencia') show('res_suc');
+
+  // Resumo rows
+  var show_va = tipo==='autor', show_vh = tipo==='honorarios', show_vs = tipo==='sucumbencia';
+  show_va ? show('rr_va') : hide('rr_va');
+  show_vh ? show('rr_vh') : hide('rr_vh');
+  show_vs ? show('rr_vs') : hide('rr_vs');
+  (tipo==='autor')  ? show('rr_da') : hide('rr_da');
+  (tipo!=='autor')  ? show('rr_dd') : hide('rr_dd');
+  show_va ? show('rr_dea') : hide('rr_dea');  // despesa só no resumo de autor (simplificado)
+  (tipo==='autor')       ? show('rr_pa') : hide('rr_pa');
+  (tipo==='honorarios')  ? show('rr_ph') : hide('rr_ph');
+  (tipo==='sucumbencia') ? show('rr_ps') : hide('rr_ps');
+
+  calcular();
+}
+
+// ── Taxa Efetiva (= TAXA do Excel) ─────────────
+// TAXA(nper, 0, -proposta, original) => (original/proposta)^(1/nper) - 1
+function calcTaxa(meses, proposta, original){
+  if(!meses || meses <= 0 || !proposta || proposta <= 0 || !original || original <= 0) return null;
+  return (Math.pow(original / proposta, 1 / meses) - 1) * 100;
+}
+
+function mesesAte(dateStr){
+  if(!dateStr) return null;
+  // Parsear data sem depender de timezone: "YYYY-MM-DD"
+  var parts = dateStr.split('-');
+  if(parts.length !== 3) return null;
+  var alvo = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  var hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  var dias = (alvo - hoje) / (1000*60*60*24);
+  if(dias <= 0) return null;
+  return dias / 30; // dias / 30 = nper em meses (igual à planilha: (B30-B35)/30)
+}
+
+// ── Calcular ───────────────────────────────────
+function calcular(){
+  var sent = num('valor_sentenca');
+  var ph   = num('perc_hon') / 100;   // select: 30,32,35,40 → divide por 100
+  var dap  = num('desagio_autor');
+  var dadp = num('desagio_adv');
+  var da   = dap  / 100;
+  var dad  = dadp / 100;
+  var deA  = num('desp_autor');
+  var deH  = num('desp_hon');
+  var deS  = num('desp_suc');
+  var sucV = num('valor_suc');
+
+  var prazoStr = val('prazo');
+  var meses    = mesesAte(prazoStr);
+
+  // Valores base
+  var vA = sent * (1 - ph);
+  var vH = sent * ph;
+
+  // Propostas — sem -R$75
+  var pA = vA   * (1 - da)  - deA;
+  var pH = vH   * (1 - dad) - deH;
+  var pS = sucV * (1 - dad) - deS;
+
+  // Taxas (função TAXA do Excel)
+  var tA = calcTaxa(meses, pA, vA);
+  var tH = calcTaxa(meses, pH, vH);
+  var tS = calcTaxa(meses, pS, sucV);
+
+  // Intermediários
+  el('val_autor').value = sent > 0 ? fmtN(vA) : '';
+  el('val_hon').value   = sent > 0 ? fmtN(vH) : '';
+
+  // Resultado
+  txt('rv_a', pA > 0 ? fmt(pA) : 'R$ —');
+  txt('rv_h', pH > 0 ? fmt(pH) : 'R$ —');
+  txt('rv_s', pS > 0 ? fmt(pS) : 'R$ —');
+
+  var semPrazo = '(informe o prazo)';
+  txt('rtx_a', tA !== null ? tA.toFixed(2)+'% a.m.' : semPrazo);
+  txt('rtx_h', tH !== null ? tH.toFixed(2)+'% a.m.' : semPrazo);
+  txt('rtx_s', tS !== null ? tS.toFixed(2)+'% a.m.' : semPrazo);
+
+  // Resumo
+  var tl = {autor:'Autor', honorarios:'Honorários', sucumbencia:'Sucumbência'};
+  txt('rs_tipo', tl[TIPO]);
+  txt('rs_sent', sent > 0 ? fmt(sent) : '—');
+  txt('rs_va',   sent > 0 ? fmt(vA)   : '—');
+  txt('rs_vh',   sent > 0 ? fmt(vH)   : '—');
+  txt('rs_vs',   sucV > 0 ? fmt(sucV) : '—');
+  txt('rs_da',   dap  > 0 ? dap+'%'   : '—');
+  txt('rs_dd',   dadp > 0 ? dadp+'%'  : '—');
+  txt('rs_dea',  deA  > 0 ? fmt(deA)  : deH > 0 ? fmt(deH) : deS > 0 ? fmt(deS) : '—');
+  txt('rs_pa',   pA   > 0 ? fmt(pA)   : '—');
+  txt('rs_ph',   pH   > 0 ? fmt(pH)   : '—');
+  txt('rs_ps',   pS   > 0 ? fmt(pS)   : '—');
+  var taxa = TIPO==='autor' ? tA : TIPO==='honorarios' ? tH : tS;
+  txt('rs_ta', taxa !== null ? taxa.toFixed(2)+'% a.m.' : semPrazo);
+
+  // Salvar estado
+  C = {TIPO,sent,vA,vH,sucV,dap,dadp,deA,deH,deS,pA,pH,pS,tA,tH,tS};
+}
+
+// ── Webhook ────────────────────────────────────
+function abrirCfg(){ el('wInput').value=WH; el('cfgModal').className='overlay open'; }
+function fecharCfg(){ el('cfgModal').className='overlay'; }
+function salvarCfg(){
+  var u = el('wInput').value.trim();
+  if(!u.startsWith('http')){ toast('URL inválida','err'); return; }
+  WH = u; localStorage.setItem('trust_wh',u); atualizarWH(); fecharCfg(); toast('Webhook configurado!','ok');
+}
+function atualizarWH(){
+  el('wdot').className = 'dot' + (WH?' ok':'');
+  el('wtxt').textContent = WH ? 'Webhook configurado' : 'Webhook não configurado';
+}
+el('cfgModal').addEventListener('click', function(e){ if(e.target===this) fecharCfg(); });
+
+// ── Salvar Pipeline ────────────────────────────
+async function salvar(){
+  if(!WH){ toast('Configure o webhook primeiro','err'); return; }
+  if(!C.sent && !C.sucV){ toast('Preencha os dados financeiros','err'); return; }
+  var hoje = new Date().toISOString().split('T')[0];
+  var payload = {
+    airtable_record_id: window._airtableRecordId,
+    tipo_processo: C.TIPO,
+    numero_processo: val('numero_processo'), agente: val('agente'),
+    autor: val('autor'), advogado: val('advogado'),
+    tipo_credito: val('tipo_credito'), obs_inss: val('obs_inss'),
+    hon_destacados: val('hon_destacados'),
+    valor_sentenca: C.sent, valor_autor: C.vA,
+    valor_honorarios: C.vH, valor_sucumbencia: C.sucV,
+    desagio_autor: C.dap, desagio_adv: C.dadp,
+    despesas_autor: C.deA, despesas_hon: C.deH, despesas_suc: C.deS,
+    proposta_autor: r2(C.pA), proposta_hon: r2(C.pH), proposta_suc: r2(C.pS),
+    taxa_autor: C.tA!==null?r2(C.tA):null,
+    taxa_hon:   C.tH!==null?r2(C.tH):null,
+    taxa_suc:   C.tS!==null?r2(C.tS):null,
+    prazo_previsto: val('prazo')||null,
+    data_proposta: hoje, status: 'Proposta Enviada'
+  };
+  var btn = el('btnSalvar');
+  btn.disabled=true; btn.textContent='⏳ Enviando...';
+  try{
+    var res = await fetch(WH,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(res.ok) toast('✅ Proposta salva no Pipeline!','ok');
+    else throw new Error('HTTP '+res.status);
+  }catch(e){ toast('❌ Erro: '+e.message,'err'); }
+  finally{ btn.disabled=false; btn.innerHTML='💾 Salvar no Pipeline'; }
+}
+
+// ── Toast ──────────────────────────────────────
+function toast(msg, tipo){
+  var t = el('toast');
+  t.textContent = msg;
+  t.className = 'toast '+(tipo||'')+' show';
+  setTimeout(function(){ t.className='toast '+(tipo||''); }, 3500);
+}
+
+// Iniciar
+calcular();
+</script>
+</body>
+</html>
