@@ -297,6 +297,9 @@ function r2(n){ return Math.round(n*100)/100; }
   var p   = new URLSearchParams(location.search);
   var hit = false;
 
+  // Captura record_id do Airtable se vier na URL
+  window._airtableRecordId = p.get('record_id') || p.get('airtable_id') || null;
+
   // Mapeamento direto de parâmetros para campos
   var map = {processo:'numero_processo', autor:'autor', advogado:'advogado', agente:'agente'};
   for(var k in map){
@@ -488,6 +491,7 @@ async function salvar(){
   if(!C.sent && !C.sucV){ toast('Preencha os dados financeiros','err'); return; }
   var hoje = new Date().toISOString().split('T')[0];
   var payload = {
+    airtable_record_id: window._airtableRecordId || null,
     tipo_processo: C.TIPO,
     numero_processo: val('numero_processo'), agente: val('agente'),
     autor: val('autor'), advogado: val('advogado'),
