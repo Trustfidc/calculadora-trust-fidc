@@ -266,7 +266,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 </div>
 
 <!-- URL HINT -->
-<div class="card makehint">
+<div class="card makehint" style="display:none">
   <div class="ct">🔗 Pré-preenchimento via URL — para o Make</div>
   <p>Monte esta URL com os dados da solicitação e envie para a Vanessa via WhatsApp:<br>
   <code>calculadora_trust_fidc.html?tipo=autor&processo=0001234-56.2024.8.26.0000&autor=João+Silva&advogado=Dr.+Pedro&agente=Felipe&credito=Trabalhista</code>
@@ -314,8 +314,12 @@ function r2(n){ return Math.round(n*100)/100; }
   var autorAdv = p.get('autor_advogado') || p.get('nome_autor_advogado');
   if(autorAdv && autorAdv !== 'NaN'){
     var decoded = decodeURIComponent(autorAdv.replace(/\+/g,' '));
-    if(!el('autor').value) { el('autor').value = decoded; el('autor').style.background='#f0fdf4'; }
-    if(!el('advogado').value) { el('advogado').value = decoded; el('advogado').style.background='#f0fdf4'; }
+    // Autor -> preenche campo autor; Honorários/Sucumbência -> preenche campo advogado
+    if(tipoNorm === 'autor'){
+      if(!el('autor').value) { el('autor').value = decoded; el('autor').style.background='#f0fdf4'; }
+    } else {
+      if(!el('advogado').value) { el('advogado').value = decoded; el('advogado').style.background='#f0fdf4'; }
+    }
     hit = true;
   }
 
@@ -499,6 +503,10 @@ el('cfgModal').addEventListener('click', function(e){ if(e.target===this) fechar
 async function salvar(){
   if(!WH){ toast('Configure o webhook primeiro','err'); return; }
   if(!C.sent && !C.sucV){ toast('Preencha os dados financeiros','err'); return; }
+  if(!val('numero_processo').trim()){ toast('Informe o número do processo','err'); return; }
+  if(!val('prazo').trim()){ toast('Informe o prazo previsto','err'); return; }
+  var propAtiva = C.TIPO==='autor' ? C.pA : C.TIPO==='honorarios' ? C.pH : C.pS;
+  if(!propAtiva || propAtiva <= 0){ toast('Preencha os dados de negociação','err'); return; }
   var hoje = new Date().toISOString().split('T')[0];
   var payload = {
     airtable_record_id: window._airtableRecordId || '',
