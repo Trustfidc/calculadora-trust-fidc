@@ -279,6 +279,11 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 // ── Estado global ──────────────────────────────
 var TIPO = 'autor';
 var WH   = localStorage.getItem('trust_wh') || '';
+// Auto-configurar webhook via URL param ?wh=
+(function(){
+  var whParam = new URLSearchParams(location.search).get('wh');
+  if(whParam && whParam.startsWith('http')){ WH = whParam; localStorage.setItem('trust_wh', whParam); }
+})();
 var C    = {};
 
 // ── Helpers DOM ────────────────────────────────
