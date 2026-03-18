@@ -356,6 +356,14 @@ function normalizaTipo(raw){
 
   if(p.get('credito')){ el('tipo_credito').value = decodeURIComponent(p.get('credito').replace(/\+/g,' ')); hit=true; }
 
+  // Valores financeiros (para revisão)
+  var da = p.get('desagio_autor');
+  if(da && parseFloat(da) > 0){ el('desagio_autor').value = parseFloat(da); el('desagio_autor').style.background='#f0fdf4'; hit=true; }
+  var dd = p.get('desagio_adv');
+  if(dd && parseFloat(dd) > 0){ el('desagio_adv').value = parseFloat(dd); el('desagio_adv').style.background='#f0fdf4'; hit=true; }
+  var vsuc = p.get('valor_suc');
+  if(vsuc && parseFloat(vsuc) > 0){ el('valor_suc').value = parseFloat(vsuc); el('valor_suc').style.background='#f0fdf4'; hit=true; }
+
   // Ler record_id do Airtable da URL
   var rid = p.get('record_id');
   if(rid && rid !== 'undefined' && rid !== '') {
