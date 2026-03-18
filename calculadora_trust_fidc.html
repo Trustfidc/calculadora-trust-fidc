@@ -321,17 +321,27 @@ function normalizaTipo(raw){
     }
   }
 
-  // Campo combinado autor_advogado
+  // Campos separados autor e advogado (novo formato)
+  var autorParam = p.get('autor');
+  if(autorParam && autorParam !== 'NaN'){
+    el('autor').value = decodeURIComponent(autorParam.replace(/\+/g,' '));
+    el('autor').style.background='#f0fdf4'; hit=true;
+  }
+  var advParam = p.get('advogado');
+  if(advParam && advParam !== 'NaN'){
+    el('advogado').value = decodeURIComponent(advParam.replace(/\+/g,' '));
+    el('advogado').style.background='#f0fdf4'; hit=true;
+  }
+  // Retrocompatibilidade: campo combinado autor_advogado (legado)
   var autorAdv = p.get('autor_advogado') || p.get('nome_autor_advogado');
-  if(autorAdv && autorAdv !== 'NaN'){
+  if(autorAdv && autorAdv !== 'NaN' && !el('autor').value && !el('advogado').value){
     var decoded = decodeURIComponent(autorAdv.replace(/\+/g,' '));
-    // Determina onde colocar baseado nos tipos que virão da URL
     var tipoRaw = (p.get('tipo') || 'autor');
     var primeiroTipo = normalizaTipo(tipoRaw.split(',')[0].trim());
     if(primeiroTipo === 'autor'){
-      if(!el('autor').value){ el('autor').value = decoded; el('autor').style.background='#f0fdf4'; }
+      el('autor').value = decoded; el('autor').style.background='#f0fdf4';
     } else {
-      if(!el('advogado').value){ el('advogado').value = decoded; el('advogado').style.background='#f0fdf4'; }
+      el('advogado').value = decoded; el('advogado').style.background='#f0fdf4';
     }
     hit = true;
   }
