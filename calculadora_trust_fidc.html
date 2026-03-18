@@ -362,6 +362,13 @@ function normalizaTipo(raw){
     window._airtableRecordId = rid;
   }
 
+  // Revisão: flag e valor da contra proposta
+  window._revisao = p.get('revisao') === '1';
+  var contraVal = parseFloat(p.get('contra_proposta'));
+  if(window._revisao && !isNaN(contraVal) && contraVal > 0) {
+    window._contraPropostaVal = contraVal;
+  }
+
   if(hit) el('urlHint').style.display = 'block';
 
   // Tipos da URL — suporta múltiplos separados por vírgula
@@ -589,7 +596,9 @@ async function salvar(){
     taxa_suc:          C.tS !== null ? r2(C.tS) : null,
     prazo_previsto: val('prazo') || null,
     data_proposta: hoje,
-    status: 'Proposta Enviada'
+    status: window._revisao ? 'Negociação' : 'Proposta Enviada',
+    revisao: window._revisao ? true : false,
+    contra_proposta: window._contraPropostaVal || null
   };
   var btn = el('btnSalvar');
   btn.disabled=true; btn.textContent='⏳ Enviando...';
