@@ -40,7 +40,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 .wrap{max-width:960px;margin:0 auto;padding:20px 16px;}
 
 /* TIPO */
-.tipo-sel{display:flex;background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:16px;box-shadow:0 1px 3px #0001;}
+.tipo-sel{display:flex;background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:6px;box-shadow:0 1px 3px #0001;}
 .tbtn{flex:1;padding:13px 8px;text-align:center;background:white;border:none;border-right:1px solid #e5e7eb;cursor:pointer;transition:background .15s;}
 .tbtn:last-child{border-right:none;}
 .tbtn .ti{font-size:18px;display:block;margin-bottom:3px;}
@@ -50,6 +50,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 .tbtn.active .tn{color:#c9a84c;}
 .tbtn.active .td{color:#9ca3af;}
 .tbtn:not(.active):hover{background:#f9fafb;}
+.tipo-hint{font-size:11px;color:#9ca3af;text-align:center;margin-bottom:14px;}
 
 /* CARDS */
 .card{background:white;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px #0001;border:1px solid #e5e7eb;margin-bottom:14px;}
@@ -74,6 +75,8 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 /* RESULTADO */
 .rcard{background:#0a1628;border-radius:10px;padding:18px 20px;margin-bottom:14px;border:1px solid #1e3a5f;}
 .rcard .ct{border-bottom-color:#1e3a5f;}
+.ri{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #1e3a5f;}
+.ri:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
 .ri .rl{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
 .ri .rv{font-size:26px;font-weight:bold;color:#c9a84c;}
 .ri .rf{font-size:10px;color:#4b6a8f;margin-top:2px;}
@@ -124,18 +127,19 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 
 <div class="urlinfo" id="urlHint">ℹ️ <strong>Dados pré-preenchidos pelo Make.</strong> Confira e preencha apenas os dados financeiros.</div>
 
-<!-- TIPO SELECTOR -->
+<!-- TIPO SELECTOR — multi-select -->
 <div class="tipo-sel">
-  <button class="tbtn active" id="tb-autor" onclick="setTipo('autor')">
+  <button class="tbtn active" id="tb-autor" onclick="toggleTipo('autor')">
     <span class="ti">👤</span><span class="tn">Autor</span><span class="td">Proposta ao cedente</span>
   </button>
-  <button class="tbtn" id="tb-honorarios" onclick="setTipo('honorarios')">
+  <button class="tbtn" id="tb-honorarios" onclick="toggleTipo('honorarios')">
     <span class="ti">⚖️</span><span class="tn">Honorários</span><span class="td">Proposta ao advogado</span>
   </button>
-  <button class="tbtn" id="tb-sucumbencia" onclick="setTipo('sucumbencia')">
+  <button class="tbtn" id="tb-sucumbencia" onclick="toggleTipo('sucumbencia')">
     <span class="ti">📋</span><span class="tn">Sucumbência</span><span class="td">Hon. sucumbenciais</span>
   </button>
 </div>
+<div class="tipo-hint">Clique para selecionar um ou mais tipos de crédito</div>
 
 <!-- IDENTIFICAÇÃO -->
 <div class="card">
@@ -163,10 +167,13 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
   <div class="card">
     <div class="ct">💰 Dados Financeiros</div>
 
-    <div class="f"><label>Valor Sentença (R$)</label>
+    <!-- Valor Sentença: visível se Autor ou Honorários ativos -->
+    <div class="f" id="b_sentenca">
+      <label>Valor Sentença (R$)</label>
       <input type="number" id="valor_sentenca" placeholder="0.00" min="0" step="0.01" oninput="calcular()">
     </div>
 
+    <!-- % Honorários: visível se Autor ou Honorários ativos -->
     <div class="f" id="b_hon_pct">
       <label>% Honorários</label>
       <select id="perc_hon" onchange="calcular()">
@@ -177,9 +184,9 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
       </select>
     </div>
 
-    <div class="sep"></div>
+    <div class="sep" id="b_sep1"></div>
 
-    <div class="f" id="b_val_autor"><label>Valor Autor (calculado)</label><input type="text" id="val_autor" readonly placeholder="—"></div>
+    <div class="f" id="b_val_autor" style="display:none"><label>Valor Autor (calculado)</label><input type="text" id="val_autor" readonly placeholder="—"></div>
     <div class="f" id="b_val_hon" style="display:none"><label>Valor Honorários (calculado)</label><input type="text" id="val_hon" readonly placeholder="—"></div>
     <div class="f" id="b_val_suc" style="display:none"><label>Valor Sucumbência (R$)</label><input type="number" id="valor_suc" placeholder="0.00" min="0" step="0.01" oninput="calcular()"></div>
 
@@ -192,7 +199,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 
   <div class="card">
     <div class="ct">📊 Negociação</div>
-    <div class="f" id="b_da"><label>% Deságio Autor</label>
+    <div class="f" id="b_da" style="display:none"><label>% Deságio Autor</label>
       <input type="number" id="desagio_autor" placeholder="Ex: 35" min="0" max="100" step="0.1" oninput="calcular()">
       <div class="hint">Tipicamente 28% a 42%</div>
     </div>
@@ -201,7 +208,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
       <div class="hint">Tipicamente 25% a 40%</div>
     </div>
     <div class="sep"></div>
-    <div class="f f-desp" id="b_desp_a">
+    <div class="f f-desp" id="b_desp_a" style="display:none">
       <label>⚠️ Despesas Cartório — Autor (R$)</label>
       <input type="number" id="desp_autor" placeholder="Ex: 417.00" min="0" step="0.01" oninput="calcular()">
       <div class="hint">Valor fixo — digitar manualmente</div>
@@ -221,7 +228,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
   </div>
 </div>
 
-<!-- RESULTADO — cada div começa hidden, JS mostra só o correto -->
+<!-- RESULTADO — múltiplos resultados visíveis simultaneamente -->
 <div class="rcard">
   <div class="ct" style="color:#c9a84c;border-bottom-color:#1e3a5f;">🏆 Proposta Final</div>
   <div id="res_autor" style="display:none" class="ri">
@@ -251,40 +258,33 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
     <tbody>
       <tr><td class="lc">Tipo</td><td class="vc" id="rs_tipo">—</td></tr>
       <tr><td class="lc">Valor Sentença</td><td class="vc" id="rs_sent">—</td></tr>
-      <tr id="rr_va"><td class="lc">Valor Autor</td><td class="vc" id="rs_va">—</td></tr>
-      <tr id="rr_vh"><td class="lc">Valor Honorários</td><td class="vc" id="rs_vh">—</td></tr>
-      <tr id="rr_vs"><td class="lc">Valor Sucumbência</td><td class="vc" id="rs_vs">—</td></tr>
-      <tr id="rr_da"><td class="lc">Deságio Autor</td><td class="vc" id="rs_da">—</td></tr>
-      <tr id="rr_dd"><td class="lc">Deságio Advogado</td><td class="vc" id="rs_dd">—</td></tr>
-      <tr id="rr_dea"><td class="lc" style="color:#b45309">Despesas Cartório</td><td class="vc" style="color:#b45309" id="rs_dea">—</td></tr>
-      <tr id="rr_pa" class="tot"><td class="lc">Proposta Autor</td><td class="vc" id="rs_pa">—</td></tr>
-      <tr id="rr_ph" class="tot"><td class="lc">Proposta Honorários</td><td class="vc" id="rs_ph">—</td></tr>
-      <tr id="rr_ps" class="tot"><td class="lc">Proposta Sucumbência</td><td class="vc" id="rs_ps">—</td></tr>
+      <tr id="rr_va" style="display:none"><td class="lc">Valor Autor</td><td class="vc" id="rs_va">—</td></tr>
+      <tr id="rr_vh" style="display:none"><td class="lc">Valor Honorários</td><td class="vc" id="rs_vh">—</td></tr>
+      <tr id="rr_vs" style="display:none"><td class="lc">Valor Sucumbência</td><td class="vc" id="rs_vs">—</td></tr>
+      <tr id="rr_da" style="display:none"><td class="lc">Deságio Autor</td><td class="vc" id="rs_da">—</td></tr>
+      <tr id="rr_dd" style="display:none"><td class="lc">Deságio Advogado</td><td class="vc" id="rs_dd">—</td></tr>
+      <tr id="rr_dea" style="display:none"><td class="lc" style="color:#b45309">Despesas Cartório</td><td class="vc" style="color:#b45309" id="rs_dea">—</td></tr>
+      <tr id="rr_pa" class="tot" style="display:none"><td class="lc">Proposta Autor</td><td class="vc" id="rs_pa">—</td></tr>
+      <tr id="rr_ph" class="tot" style="display:none"><td class="lc">Proposta Honorários</td><td class="vc" id="rs_ph">—</td></tr>
+      <tr id="rr_ps" class="tot" style="display:none"><td class="lc">Proposta Sucumbência</td><td class="vc" id="rs_ps">—</td></tr>
       <tr id="rr_ta"><td class="lc">Taxa Efetiva</td><td class="vc" id="rs_ta">—</td></tr>
     </tbody>
   </table>
-</div>
-
-<!-- URL HINT -->
-<div class="card makehint" style="display:none">
-  <div class="ct">🔗 Pré-preenchimento via URL — para o Make</div>
-  <p>Monte esta URL com os dados da solicitação e envie para a Vanessa via WhatsApp:<br>
-  <code>calculadora_trust_fidc.html?tipo=autor&processo=0001234-56.2024.8.26.0000&autor=João+Silva&advogado=Dr.+Pedro&agente=Felipe&credito=Trabalhista</code>
-  Parâmetros: <code>tipo</code> (autor/honorarios/sucumbencia) · <code>processo</code> · <code>autor</code> · <code>advogado</code> · <code>agente</code> · <code>credito</code></p>
 </div>
 
 </div><!-- /wrap -->
 
 <script>
 // ── Estado global ──────────────────────────────
-var TIPO = 'autor';
-var WH   = localStorage.getItem('trust_wh') || '';
+// TIPOS é um Set com os tipos ativos (multi-select)
+var TIPOS = new Set(['autor']);
+var WH    = localStorage.getItem('trust_wh') || '';
 // Auto-configurar webhook via URL param ?wh=
 (function(){
   var whParam = new URLSearchParams(location.search).get('wh');
   if(whParam && whParam.startsWith('http')){ WH = whParam; localStorage.setItem('trust_wh', whParam); }
 })();
-var C    = {};
+var C = {};
 
 // ── Helpers DOM ────────────────────────────────
 function el(id){ return document.getElementById(id); }
@@ -296,6 +296,14 @@ function hide(id){ el(id).style.display = 'none'; }
 function fmt(n){ return 'R\u00a0' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtN(n){ return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function r2(n){ return Math.round(n*100)/100; }
+
+// ── Normaliza tipo da URL ──────────────────────
+function normalizaTipo(raw){
+  var s = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(s.includes('honor')) return 'honorarios';
+  if(s.includes('suc'))   return 'sucumbencia';
+  return 'autor';
+}
 
 // ── Init: ler params URL ───────────────────────
 (function(){
@@ -313,17 +321,17 @@ function r2(n){ return Math.round(n*100)/100; }
     }
   }
 
-  // Suporte ao campo combinado "autor_advogado" que vem do Form 1
-  // O Form 1 tem campo único "Nome do Autor / Advogado"
-  // Coloca no campo autor se autor não veio separado
+  // Campo combinado autor_advogado
   var autorAdv = p.get('autor_advogado') || p.get('nome_autor_advogado');
   if(autorAdv && autorAdv !== 'NaN'){
     var decoded = decodeURIComponent(autorAdv.replace(/\+/g,' '));
-    // Autor -> preenche campo autor; Honorários/Sucumbência -> preenche campo advogado
-    if(tipoNorm === 'autor'){
-      if(!el('autor').value) { el('autor').value = decoded; el('autor').style.background='#f0fdf4'; }
+    // Determina onde colocar baseado nos tipos que virão da URL
+    var tipoRaw = (p.get('tipo') || 'autor');
+    var primeiroTipo = normalizaTipo(tipoRaw.split(',')[0].trim());
+    if(primeiroTipo === 'autor'){
+      if(!el('autor').value){ el('autor').value = decoded; el('autor').style.background='#f0fdf4'; }
     } else {
-      if(!el('advogado').value) { el('advogado').value = decoded; el('advogado').style.background='#f0fdf4'; }
+      if(!el('advogado').value){ el('advogado').value = decoded; el('advogado').style.background='#f0fdf4'; }
     }
     hit = true;
   }
@@ -345,69 +353,88 @@ function r2(n){ return Math.round(n*100)/100; }
   }
 
   if(hit) el('urlHint').style.display = 'block';
-  // Normaliza o tipo da URL (aceita "Honorários", "honorarios", "Autor", etc.)
-  var tipoRaw = (p.get('tipo') || 'autor').toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  var tipoNorm = tipoRaw.includes('honor') ? 'honorarios'
-               : tipoRaw.includes('suc') ? 'sucumbencia'
-               : 'autor';
-  setTipo(tipoNorm);
+
+  // Tipos da URL — suporta múltiplos separados por vírgula
+  // Ex: ?tipo=autor  ou  ?tipo=Autor, Honorários
+  var tipoParam = p.get('tipo') || 'autor';
+  var tiposUrl = tipoParam.split(',').map(function(t){ return normalizaTipo(t.trim()); });
+  // Remove duplicatas
+  TIPOS = new Set(tiposUrl);
+  if(TIPOS.size === 0) TIPOS.add('autor');
+
+  atualizarBotoes();
+  atualizarCampos();
   atualizarWH();
 })();
 
-// ── setTipo ────────────────────────────────────
-function setTipo(tipo){
-  TIPO = tipo;
-
-  // botões
-  ['autor','honorarios','sucumbencia'].forEach(function(t){
-    el('tb-'+t).className = 'tbtn' + (t===tipo ? ' active' : '');
-  });
-
-  // Tipo de Crédito display (só se não veio da URL)
-  if(!new URLSearchParams(location.search).get('credito')){
-    var lab = {autor:'Autor', honorarios:'Honorários', sucumbencia:'Sucumbência'};
-    el('tipo_credito').value = lab[tipo];
+// ── toggleTipo — clique nas abas ───────────────
+function toggleTipo(tipo){
+  if(TIPOS.has(tipo)){
+    // Só remove se não for o último ativo
+    if(TIPOS.size > 1) TIPOS.delete(tipo);
+  } else {
+    TIPOS.add(tipo);
   }
-
-  // Campos financeiros
-  tipo==='sucumbencia' ? hide('b_hon_pct')  : show('b_hon_pct');
-  tipo==='autor'       ? show('b_val_autor') : hide('b_val_autor');
-  tipo==='honorarios'  ? show('b_val_hon')   : hide('b_val_hon');
-  tipo==='sucumbencia' ? show('b_val_suc')   : hide('b_val_suc');
-
-  // Deságios
-  tipo==='autor'  ? show('b_da') : hide('b_da');
-  tipo!=='autor'  ? show('b_dd') : hide('b_dd');
-
-  // Despesas
-  tipo==='autor'       ? show('b_desp_a') : hide('b_desp_a');
-  tipo==='honorarios'  ? show('b_desp_h') : hide('b_desp_h');
-  tipo==='sucumbencia' ? show('b_desp_s') : hide('b_desp_s');
-
-  // Resultado — só um visível
-  hide('res_autor'); hide('res_hon'); hide('res_suc');
-  if(tipo==='autor')       show('res_autor');
-  if(tipo==='honorarios')  show('res_hon');
-  if(tipo==='sucumbencia') show('res_suc');
-
-  // Resumo rows
-  var show_va = tipo==='autor', show_vh = tipo==='honorarios', show_vs = tipo==='sucumbencia';
-  show_va ? show('rr_va') : hide('rr_va');
-  show_vh ? show('rr_vh') : hide('rr_vh');
-  show_vs ? show('rr_vs') : hide('rr_vs');
-  (tipo==='autor')  ? show('rr_da') : hide('rr_da');
-  (tipo!=='autor')  ? show('rr_dd') : hide('rr_dd');
-  show_va ? show('rr_dea') : hide('rr_dea');  // despesa só no resumo de autor (simplificado)
-  (tipo==='autor')       ? show('rr_pa') : hide('rr_pa');
-  (tipo==='honorarios')  ? show('rr_ph') : hide('rr_ph');
-  (tipo==='sucumbencia') ? show('rr_ps') : hide('rr_ps');
-
+  atualizarBotoes();
+  atualizarCampos();
   calcular();
 }
 
+// ── Atualiza visual dos botões ─────────────────
+function atualizarBotoes(){
+  ['autor','honorarios','sucumbencia'].forEach(function(t){
+    el('tb-'+t).className = 'tbtn' + (TIPOS.has(t) ? ' active' : '');
+  });
+  // Atualiza campo tipo_credito se não veio da URL
+  if(!new URLSearchParams(location.search).get('credito')){
+    var lab = {autor:'Autor', honorarios:'Honorários', sucumbencia:'Sucumbência'};
+    var labels = Array.from(TIPOS).map(function(t){ return lab[t]; });
+    el('tipo_credito').value = labels.join(', ');
+  }
+}
+
+// ── Atualiza campos visíveis conforme tipos ativos ──
+function atualizarCampos(){
+  var temAutor  = TIPOS.has('autor');
+  var temHon    = TIPOS.has('honorarios');
+  var temSuc    = TIPOS.has('sucumbencia');
+  var temSentenca = temAutor || temHon;
+  var temDesAdv   = temHon  || temSuc;
+
+  // Dados Financeiros
+  temSentenca ? show('b_sentenca') : hide('b_sentenca');
+  temSentenca ? show('b_hon_pct')  : hide('b_hon_pct');
+  temAutor    ? show('b_val_autor'): hide('b_val_autor');
+  temHon      ? show('b_val_hon')  : hide('b_val_hon');
+  temSuc      ? show('b_val_suc')  : hide('b_val_suc');
+
+  // Negociação — deságios
+  temAutor  ? show('b_da') : hide('b_da');
+  temDesAdv ? show('b_dd') : hide('b_dd');
+
+  // Despesas
+  temAutor ? show('b_desp_a') : hide('b_desp_a');
+  temHon   ? show('b_desp_h') : hide('b_desp_h');
+  temSuc   ? show('b_desp_s') : hide('b_desp_s');
+
+  // Resultados — todos os ativos visíveis
+  temAutor ? show('res_autor') : hide('res_autor');
+  temHon   ? show('res_hon')   : hide('res_hon');
+  temSuc   ? show('res_suc')   : hide('res_suc');
+
+  // Resumo rows
+  temAutor ? show('rr_va') : hide('rr_va');
+  temHon   ? show('rr_vh') : hide('rr_vh');
+  temSuc   ? show('rr_vs') : hide('rr_vs');
+  temAutor  ? show('rr_da') : hide('rr_da');
+  temDesAdv ? show('rr_dd') : hide('rr_dd');
+  (temAutor || temHon || temSuc) ? show('rr_dea') : hide('rr_dea');
+  temAutor ? show('rr_pa') : hide('rr_pa');
+  temHon   ? show('rr_ph') : hide('rr_ph');
+  temSuc   ? show('rr_ps') : hide('rr_ps');
+}
+
 // ── Taxa Efetiva (= TAXA do Excel) ─────────────
-// TAXA(nper, 0, -proposta, original) => (original/proposta)^(1/nper) - 1
 function calcTaxa(meses, proposta, original){
   if(!meses || meses <= 0 || !proposta || proposta <= 0 || !original || original <= 0) return null;
   return (Math.pow(original / proposta, 1 / meses) - 1) * 100;
@@ -415,7 +442,6 @@ function calcTaxa(meses, proposta, original){
 
 function mesesAte(dateStr){
   if(!dateStr) return null;
-  // Parsear data sem depender de timezone: "YYYY-MM-DD"
   var parts = dateStr.split('-');
   if(parts.length !== 3) return null;
   var alvo = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
@@ -423,13 +449,13 @@ function mesesAte(dateStr){
   hoje.setHours(0,0,0,0);
   var dias = (alvo - hoje) / (1000*60*60*24);
   if(dias <= 0) return null;
-  return dias / 30; // dias / 30 = nper em meses (igual à planilha: (B30-B35)/30)
+  return dias / 30;
 }
 
 // ── Calcular ───────────────────────────────────
 function calcular(){
   var sent = num('valor_sentenca');
-  var ph   = num('perc_hon') / 100;   // select: 30,32,35,40 → divide por 100
+  var ph   = num('perc_hon') / 100;
   var dap  = num('desagio_autor');
   var dadp = num('desagio_adv');
   var da   = dap  / 100;
@@ -446,12 +472,12 @@ function calcular(){
   var vA = sent * (1 - ph);
   var vH = sent * ph;
 
-  // Propostas — sem -R$75
+  // Propostas
   var pA = vA   * (1 - da)  - deA;
   var pH = vH   * (1 - dad) - deH;
   var pS = sucV * (1 - dad) - deS;
 
-  // Taxas (função TAXA do Excel)
+  // Taxas
   var tA = calcTaxa(meses, pA, vA);
   var tH = calcTaxa(meses, pH, vH);
   var tS = calcTaxa(meses, pS, sucV);
@@ -460,7 +486,7 @@ function calcular(){
   el('val_autor').value = sent > 0 ? fmtN(vA) : '';
   el('val_hon').value   = sent > 0 ? fmtN(vH) : '';
 
-  // Resultado
+  // Resultados
   txt('rv_a', pA > 0 ? fmt(pA) : 'R$ —');
   txt('rv_h', pH > 0 ? fmt(pH) : 'R$ —');
   txt('rv_s', pS > 0 ? fmt(pS) : 'R$ —');
@@ -471,23 +497,31 @@ function calcular(){
   txt('rtx_s', tS !== null ? tS.toFixed(2)+'% a.m.' : semPrazo);
 
   // Resumo
-  var tl = {autor:'Autor', honorarios:'Honorários', sucumbencia:'Sucumbência'};
-  txt('rs_tipo', tl[TIPO]);
+  var lab = {autor:'Autor', honorarios:'Honorários', sucumbencia:'Sucumbência'};
+  var tiposLabel = Array.from(TIPOS).map(function(t){ return lab[t]; }).join(' + ');
+  txt('rs_tipo', tiposLabel);
   txt('rs_sent', sent > 0 ? fmt(sent) : '—');
   txt('rs_va',   sent > 0 ? fmt(vA)   : '—');
   txt('rs_vh',   sent > 0 ? fmt(vH)   : '—');
   txt('rs_vs',   sucV > 0 ? fmt(sucV) : '—');
   txt('rs_da',   dap  > 0 ? dap+'%'   : '—');
   txt('rs_dd',   dadp > 0 ? dadp+'%'  : '—');
-  txt('rs_dea',  deA  > 0 ? fmt(deA)  : deH > 0 ? fmt(deH) : deS > 0 ? fmt(deS) : '—');
-  txt('rs_pa',   pA   > 0 ? fmt(pA)   : '—');
-  txt('rs_ph',   pH   > 0 ? fmt(pH)   : '—');
-  txt('rs_ps',   pS   > 0 ? fmt(pS)   : '—');
-  var taxa = TIPO==='autor' ? tA : TIPO==='honorarios' ? tH : tS;
-  txt('rs_ta', taxa !== null ? taxa.toFixed(2)+'% a.m.' : semPrazo);
+  // Despesas: mostrar soma das despesas ativas
+  var despTotal = (TIPOS.has('autor') ? deA : 0) + (TIPOS.has('honorarios') ? deH : 0) + (TIPOS.has('sucumbencia') ? deS : 0);
+  txt('rs_dea',  despTotal > 0 ? fmt(despTotal) : '—');
+  txt('rs_pa',   pA > 0 ? fmt(pA) : '—');
+  txt('rs_ph',   pH > 0 ? fmt(pH) : '—');
+  txt('rs_ps',   pS > 0 ? fmt(pS) : '—');
+  // Taxa efetiva: se múltiplos tipos, mostra o maior (mais conservador)
+  var taxas = [];
+  if(TIPOS.has('autor')      && tA !== null) taxas.push(tA);
+  if(TIPOS.has('honorarios') && tH !== null) taxas.push(tH);
+  if(TIPOS.has('sucumbencia')&& tS !== null) taxas.push(tS);
+  var taxaMedia = taxas.length > 0 ? taxas.reduce(function(a,b){return a+b;},0)/taxas.length : null;
+  txt('rs_ta', taxaMedia !== null ? taxaMedia.toFixed(2)+'% a.m. (média)' : semPrazo);
 
   // Salvar estado
-  C = {TIPO,sent,vA,vH,sucV,dap,dadp,deA,deH,deS,pA,pH,pS,tA,tH,tS};
+  C = {TIPOS: Array.from(TIPOS), sent, vA, vH, sucV, dap, dadp, deA, deH, deS, pA, pH, pS, tA, tH, tS};
 }
 
 // ── Webhook ────────────────────────────────────
@@ -510,26 +544,42 @@ async function salvar(){
   if(!C.sent && !C.sucV){ toast('Preencha os dados financeiros','err'); return; }
   if(!val('numero_processo').trim()){ toast('Informe o número do processo','err'); return; }
   if(!val('prazo').trim()){ toast('Informe o prazo previsto','err'); return; }
-  var propAtiva = C.TIPO==='autor' ? C.pA : C.TIPO==='honorarios' ? C.pH : C.pS;
-  if(!propAtiva || propAtiva <= 0){ toast('Preencha os dados de negociação','err'); return; }
+  // Valida que pelo menos um tipo ativo tem proposta positiva
+  var algumValido = false;
+  if(TIPOS.has('autor')       && C.pA > 0) algumValido = true;
+  if(TIPOS.has('honorarios')  && C.pH > 0) algumValido = true;
+  if(TIPOS.has('sucumbencia') && C.pS > 0) algumValido = true;
+  if(!algumValido){ toast('Preencha os dados de negociação','err'); return; }
+
   var hoje = new Date().toISOString().split('T')[0];
   var payload = {
     airtable_record_id: window._airtableRecordId || '',
-    tipo_processo: C.TIPO,
-    numero_processo: val('numero_processo'), agente: val('agente'),
-    autor: val('autor'), advogado: val('advogado'),
-    tipo_credito: val('tipo_credito'), obs_inss: val('obs_inss'),
+    tipo_processo: C.TIPOS,           // array: ["autor", "honorarios"] etc
+    numero_processo: val('numero_processo'),
+    agente: val('agente'),
+    autor: val('autor'),
+    advogado: val('advogado'),
+    tipo_credito: val('tipo_credito'),
+    obs_inss: val('obs_inss'),
     hon_destacados: val('hon_destacados'),
-    valor_sentenca: C.sent, valor_autor: C.vA,
-    valor_honorarios: C.vH, valor_sucumbencia: C.sucV,
-    desagio_autor: C.dap, desagio_adv: C.dadp,
-    despesas_autor: C.deA, despesas_hon: C.deH, despesas_suc: C.deS,
-    proposta_autor: r2(C.pA), proposta_hon: r2(C.pH), proposta_suc: r2(C.pS),
-    taxa_autor: C.tA!==null?r2(C.tA):null,
-    taxa_hon:   C.tH!==null?r2(C.tH):null,
-    taxa_suc:   C.tS!==null?r2(C.tS):null,
-    prazo_previsto: val('prazo')||null,
-    data_proposta: hoje, status: 'Proposta Enviada'
+    valor_sentenca: C.sent,
+    valor_autor: C.vA,
+    valor_honorarios: C.vH,
+    valor_sucumbencia: C.sucV,
+    desagio_autor: C.dap,
+    desagio_adv: C.dadp,
+    despesas_autor: C.deA,
+    despesas_hon: C.deH,
+    despesas_suc: C.deS,
+    proposta_autor:    TIPOS.has('autor')       ? r2(C.pA) : null,
+    proposta_hon:      TIPOS.has('honorarios')  ? r2(C.pH) : null,
+    proposta_suc:      TIPOS.has('sucumbencia') ? r2(C.pS) : null,
+    taxa_autor:        C.tA !== null ? r2(C.tA) : null,
+    taxa_hon:          C.tH !== null ? r2(C.tH) : null,
+    taxa_suc:          C.tS !== null ? r2(C.tS) : null,
+    prazo_previsto: val('prazo') || null,
+    data_proposta: hoje,
+    status: 'Proposta Enviada'
   };
   var btn = el('btnSalvar');
   btn.disabled=true; btn.textContent='⏳ Enviando...';
@@ -550,6 +600,7 @@ function toast(msg, tipo){
 }
 
 // Iniciar
+atualizarCampos();
 calcular();
 </script>
 </body>
