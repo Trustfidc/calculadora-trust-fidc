@@ -148,20 +148,22 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
     <div class="f"><label>Número do Processo</label><input type="text" id="numero_processo" placeholder="0000000-00.0000.0.00.0000"></div>
     <div class="f"><label>Nome do Autor</label><input type="text" id="autor" placeholder="Nome completo"></div>
     <div class="f"><label>Nome do Advogado</label><input type="text" id="advogado" placeholder="Dr(a). Nome"></div>
-    <div class="f"><label>Agente Responsável</label><select id="agente">
-      <option value="">Selecione o agente...</option>
-      <option>Bruno</option>
-      <option>Charles</option>
-      <option>Edemar</option>
-      <option>Felipe Carneiro</option>
-      <option>Felipe Ferri</option>
-      <option>João</option>
-      <option>José</option>
-      <option>Lucas</option>
-      <option>Marcos</option>
-      <option>Rafael</option>
-      <option>Rogelio</option>
-    </select></div>
+    <div class="f"><label>Agente Responsável</label>
+      <input type="text" id="agente" placeholder="Nome do agente" list="agentes-list">
+      <datalist id="agentes-list">
+        <option>Bruno</option>
+        <option>Charles</option>
+        <option>Edemar</option>
+        <option>Felipe Carneiro</option>
+        <option>Felipe Ferri</option>
+        <option>João</option>
+        <option>José</option>
+        <option>Lucas</option>
+        <option>Marcos</option>
+        <option>Rafael</option>
+        <option>Rogelio</option>
+      </datalist>
+    </div>
     <div class="f"><label>Tipo de Crédito</label><input type="text" id="tipo_credito" readonly></div>
     <div class="f">
       <label>Obs INSS</label>
