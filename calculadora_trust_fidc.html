@@ -206,6 +206,11 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 
   <div class="card">
     <div class="ct">📊 Negociação</div>
+    <div class="f" id="b_contra" style="display:none">
+      <label>📌 Contra-proposta do agente (R$)</label>
+      <input type="number" id="contra_proposta_input" placeholder="Valor que o agente pediu" min="0" step="0.01">
+      <div class="hint">Valor que o agente pediu. Ajuste o deságio abaixo para chegar perto e salve como revisão.</div>
+    </div>
     <div class="f" id="b_da" style="display:none"><label>% Deságio Autor</label>
       <input type="number" id="desagio_autor" placeholder="Ex: 35" min="0" max="100" step="0.1" oninput="calcular()">
       <div class="hint">Tipicamente 28% a 42%</div>
@@ -374,6 +379,17 @@ function normalizaTipo(raw){
   var irp = p.get('imposto_renda');
   if(irp === null) irp = p.get('perc_ir');
   if(irp && parseFloat(irp) > 0){ el('perc_ir').value = parseFloat(irp); el('perc_ir').style.background='#f0fdf4'; hit=true; }
+  // Demais valores para reabrir preenchido (revisão)
+  var phn = p.get('perc_hon');
+  if(phn && parseFloat(phn) > 0){ el('perc_hon').value = parseFloat(phn); hit=true; }
+  ['desp_autor','desp_hon','desp_suc'].forEach(function(idd){
+    var dv = p.get(idd);
+    if(dv && parseFloat(dv) > 0){ el(idd).value = parseFloat(dv); el(idd).style.background='#f0fdf4'; hit=true; }
+  });
+  var pz = p.get('prazo');
+  if(pz && pz !== 'NaN' && pz !== ''){ el('prazo').value = pz; hit=true; }
+  var hd = p.get('hon_destacados');
+  if(hd){ el('hon_destacados').value = hd; }
 
   // Ler record_id do Airtable da URL
   var rid = p.get('record_id');
@@ -386,6 +402,12 @@ function normalizaTipo(raw){
   var contraVal = parseFloat(p.get('contra_proposta'));
   if(window._revisao && !isNaN(contraVal) && contraVal > 0) {
     window._contraPropostaVal = contraVal;
+  }
+  // Modo revisão: mostra a caixinha de contra-proposta e marca a página
+  if(window._revisao){
+    el('b_contra').style.display = '';
+    if(window._contraPropostaVal) el('contra_proposta_input').value = window._contraPropostaVal;
+    document.title = '🔄 Revisão — ' + document.title;
   }
 
   if(hit) el('urlHint').style.display = 'block';
@@ -581,6 +603,31 @@ function atualizarWH(){
 }
 el('cfgModal').addEventListener('click', function(e){ if(e.target===this) fecharCfg(); });
 
+// Monta a query-string com TODOS os inputs — pra reabrir a calculadora preenchida (revisão)
+function buildReopenParams(){
+  var fields = {
+    processo: val('numero_processo'),
+    autor: val('autor'),
+    advogado: val('advogado'),
+    agente: val('agente'),
+    credito: val('tipo_credito'),
+    tipo: Array.from(TIPOS).join(','),
+    valor_sentenca: val('valor_sentenca'),
+    perc_hon: val('perc_hon'),
+    imposto_renda: val('perc_ir'),
+    desagio_autor: val('desagio_autor'),
+    desagio_adv: val('desagio_adv'),
+    valor_suc: val('valor_suc'),
+    desp_autor: val('desp_autor'),
+    desp_hon: val('desp_hon'),
+    desp_suc: val('desp_suc'),
+    prazo: val('prazo'),
+    hon_destacados: val('hon_destacados')
+  };
+  return Object.keys(fields).filter(function(k){ return fields[k] !== '' && fields[k] != null; })
+    .map(function(k){ return k + '=' + encodeURIComponent(fields[k]); }).join('&');
+}
+
 // ── Salvar Pipeline ────────────────────────────
 async function salvar(){
   if(!WH){ toast('Configure o webhook primeiro','err'); return; }
@@ -625,7 +672,8 @@ async function salvar(){
     data_proposta: hoje,
     status: window._revisao ? 'Negociação' : 'Proposta Enviada',
     revisao: window._revisao ? true : false,
-    contra_proposta: window._contraPropostaVal || null
+    contra_proposta: window._revisao ? (num('contra_proposta_input') || window._contraPropostaVal || null) : null,
+    reopen_params: buildReopenParams()
   };
   var btn = el('btnSalvar');
   btn.disabled=true; btn.textContent='⏳ Enviando...';
