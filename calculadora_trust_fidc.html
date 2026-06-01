@@ -173,6 +173,13 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
       <input type="number" id="valor_sentenca" placeholder="0.00" min="0" step="0.01" oninput="calcular()">
     </div>
 
+    <!-- % Imposto de Renda: abate no valor de face (sentença + sucumbência) antes do deságio -->
+    <div class="f" id="b_ir">
+      <label>% Imposto de Renda</label>
+      <input type="number" id="perc_ir" placeholder="Ex: 3" min="0" max="100" step="0.01" oninput="calcular()">
+      <div class="hint">Abate sobre o valor de face (sentença e sucumbência), antes do deságio</div>
+    </div>
+
     <!-- % Honorários: visível se Autor ou Honorários ativos -->
     <div class="f" id="b_hon_pct">
       <label>% Honorários</label>
@@ -258,6 +265,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
     <tbody>
       <tr><td class="lc">Tipo</td><td class="vc" id="rs_tipo">—</td></tr>
       <tr><td class="lc">Valor Sentença</td><td class="vc" id="rs_sent">—</td></tr>
+      <tr><td class="lc">Imposto de Renda</td><td class="vc" id="rs_ir">—</td></tr>
       <tr id="rr_va" style="display:none"><td class="lc">Valor Autor</td><td class="vc" id="rs_va">—</td></tr>
       <tr id="rr_vh" style="display:none"><td class="lc">Valor Honorários</td><td class="vc" id="rs_vh">—</td></tr>
       <tr id="rr_vs" style="display:none"><td class="lc">Valor Sucumbência</td><td class="vc" id="rs_vs">—</td></tr>
@@ -363,6 +371,9 @@ function normalizaTipo(raw){
   if(dd && parseFloat(dd) > 0){ el('desagio_adv').value = parseFloat(dd); el('desagio_adv').style.background='#f0fdf4'; hit=true; }
   var vsuc = p.get('valor_suc');
   if(vsuc && parseFloat(vsuc) > 0){ el('valor_suc').value = parseFloat(vsuc); el('valor_suc').style.background='#f0fdf4'; hit=true; }
+  var irp = p.get('imposto_renda');
+  if(irp === null) irp = p.get('perc_ir');
+  if(irp && parseFloat(irp) > 0){ el('perc_ir').value = parseFloat(irp); el('perc_ir').style.background='#f0fdf4'; hit=true; }
 
   // Ler record_id do Airtable da URL
   var rid = p.get('record_id');
@@ -481,6 +492,8 @@ function mesesAte(dateStr){
 function calcular(){
   var sent = num('valor_sentenca');
   var ph   = num('perc_hon') / 100;
+  var irPct = num('perc_ir');
+  var ir   = irPct / 100;
   var dap  = num('desagio_autor');
   var dadp = num('desagio_adv');
   var da   = dap  / 100;
@@ -493,19 +506,23 @@ function calcular(){
   var prazoStr = val('prazo');
   var meses    = mesesAte(prazoStr);
 
+  // Imposto de Renda: abate no valor de face (sentença e sucumbência) antes de tudo
+  var sentLiq = sent * (1 - ir);
+  var sucLiq  = sucV * (1 - ir);
+
   // Valores base
-  var vA = sent * (1 - ph);
-  var vH = sent * ph;
+  var vA = sentLiq * (1 - ph);
+  var vH = sentLiq * ph;
 
   // Propostas
   var pA = vA   * (1 - da)  - deA;
   var pH = vH   * (1 - dad) - deH;
-  var pS = sucV * (1 - dad) - deS;
+  var pS = sucLiq * (1 - dad) - deS;
 
   // Taxas
   var tA = calcTaxa(meses, pA, vA);
   var tH = calcTaxa(meses, pH, vH);
-  var tS = calcTaxa(meses, pS, sucV);
+  var tS = calcTaxa(meses, pS, sucLiq);
 
   // Intermediários
   el('val_autor').value = sent > 0 ? fmtN(vA) : '';
@@ -526,6 +543,7 @@ function calcular(){
   var tiposLabel = Array.from(TIPOS).map(function(t){ return lab[t]; }).join(' + ');
   txt('rs_tipo', tiposLabel);
   txt('rs_sent', sent > 0 ? fmt(sent) : '—');
+  txt('rs_ir', irPct > 0 ? irPct+'%' : '—');
   txt('rs_va',   sent > 0 ? fmt(vA)   : '—');
   txt('rs_vh',   sent > 0 ? fmt(vH)   : '—');
   txt('rs_vs',   sucV > 0 ? fmt(sucV) : '—');
@@ -546,7 +564,7 @@ function calcular(){
   txt('rs_ta', taxaMedia !== null ? taxaMedia.toFixed(2)+'% a.m. (média)' : semPrazo);
 
   // Salvar estado
-  C = {TIPOS: Array.from(TIPOS), sent, vA, vH, sucV, dap, dadp, deA, deH, deS, pA, pH, pS, tA, tH, tS};
+  C = {TIPOS: Array.from(TIPOS), sent, vA, vH, sucV, dap, dadp, deA, deH, deS, pA, pH, pS, tA, tH, tS, irPct};
 }
 
 // ── Webhook ────────────────────────────────────
@@ -587,6 +605,7 @@ async function salvar(){
     tipo_credito: val('tipo_credito'),
     obs_inss: val('obs_inss'),
     hon_destacados: val('hon_destacados'),
+    imposto_renda: C.irPct || 0,
     valor_sentenca: C.sent,
     valor_autor: C.vA,
     valor_honorarios: C.vH,
