@@ -423,6 +423,14 @@ function normalizaTipo(raw){
   atualizarBotoes();
   atualizarCampos();
   atualizarWH();
+
+  // Revisão: captura a proposta ORIGINAL (recalculada dos inputs salvos) p/ não sobrescrever ao salvar
+  if(window._revisao){
+    calcular();
+    window._origPA = TIPOS.has('autor')       ? r2(C.pA) : null;
+    window._origPH = TIPOS.has('honorarios')  ? r2(C.pH) : null;
+    window._origPS = TIPOS.has('sucumbencia') ? r2(C.pS) : null;
+  }
 })();
 
 // ── toggleTipo — clique nas abas ───────────────
@@ -662,9 +670,9 @@ async function salvar(){
     despesas_autor: C.deA,
     despesas_hon: C.deH,
     despesas_suc: C.deS,
-    proposta_autor:    TIPOS.has('autor')       ? r2(C.pA) : null,
-    proposta_hon:      TIPOS.has('honorarios')  ? r2(C.pH) : null,
-    proposta_suc:      TIPOS.has('sucumbencia') ? r2(C.pS) : null,
+    proposta_autor:    window._revisao ? (window._origPA||null) : (TIPOS.has('autor')       ? r2(C.pA) : null),
+    proposta_hon:      window._revisao ? (window._origPH||null) : (TIPOS.has('honorarios')  ? r2(C.pH) : null),
+    proposta_suc:      window._revisao ? (window._origPS||null) : (TIPOS.has('sucumbencia') ? r2(C.pS) : null),
     taxa_autor:        C.tA !== null ? r2(C.tA) : null,
     taxa_hon:          C.tH !== null ? r2(C.tH) : null,
     taxa_suc:          C.tS !== null ? r2(C.tS) : null,
