@@ -536,23 +536,19 @@ function calcular(){
   var prazoStr = val('prazo');
   var meses    = mesesAte(prazoStr);
 
-  // Imposto de Renda: abate no valor de face (sentença e sucumbência) antes de tudo
-  var sentLiq = sent * (1 - ir);
-  var sucLiq  = sucV * (1 - ir);
+  // Valores base (sem IR no valor de face)
+  var vA = sent * (1 - ph);
+  var vH = sent * ph;
 
-  // Valores base
-  var vA = sentLiq * (1 - ph);
-  var vH = sentLiq * ph;
-
-  // Propostas
-  var pA = vA   * (1 - da)  - deA;
-  var pH = vH   * (1 - dad) - deH;
-  var pS = sucLiq * (1 - dad) - deS;
+  // Propostas — Imposto de Renda abate sobre a proposta final (depois das despesas)
+  var pA = (vA   * (1 - da)  - deA) * (1 - ir);
+  var pH = (vH   * (1 - dad) - deH) * (1 - ir);
+  var pS = (sucV * (1 - dad) - deS) * (1 - ir);
 
   // Taxas
   var tA = calcTaxa(meses, pA, vA);
   var tH = calcTaxa(meses, pH, vH);
-  var tS = calcTaxa(meses, pS, sucLiq);
+  var tS = calcTaxa(meses, pS, sucV);
 
   // Intermediários
   el('val_autor').value = sent > 0 ? fmtN(vA) : '';
