@@ -632,6 +632,35 @@ function buildReopenParams(){
     .map(function(k){ return k + '=' + encodeURIComponent(fields[k]); }).join('&');
 }
 
+// Formata número em R$ no padrão BR (1.234,56)
+function brl(n){ return (Math.round(n*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// Monta a mensagem da proposta pro WhatsApp (formato exato que a Vanessa usa)
+function buildWhatsappMsg(){
+  var faces = [], props = [];
+  if(TIPOS.has('autor')       && C.vA   > 0) faces.push('R$ ' + brl(C.vA)   + ' (Autor)');
+  if(TIPOS.has('honorarios')  && C.vH   > 0) faces.push('R$ ' + brl(C.vH)   + ' (Honorários)');
+  if(TIPOS.has('sucumbencia') && C.sucV > 0) faces.push('R$ ' + brl(C.sucV) + ' (Sucumbência)');
+  if(TIPOS.has('autor')       && C.pA > 0) props.push('Proposta Autor: R$ ' + brl(C.pA));
+  if(TIPOS.has('honorarios')  && C.pH > 0) props.push('Proposta Honorários: R$ ' + brl(C.pH));
+  if(TIPOS.has('sucumbencia') && C.pS > 0) props.push('Proposta Sucumbência: R$ ' + brl(C.pS));
+  var obsHon = 'Honorários Destacados: ' + (val('hon_destacados') === 'Sim' ? 'Sim' : 'Não');
+  var oi = val('obs_inss');
+  var obsInss = oi === 'Homologou' ? ' | INSS Homologado: Sim' : (oi === 'Não Homologou' ? ' | INSS Homologado: Não' : ' | INSS: N/A');
+  var dt = new Date();
+  var dd = ('0'+dt.getDate()).slice(-2) + '/' + ('0'+(dt.getMonth()+1)).slice(-2) + '/' + dt.getFullYear();
+  return 'PROPOSTA DE COMPRA DE CRÉDITO ' + val('tipo_credito') + '\n\n'
+    + 'Agente: ' + val('agente') + '\n'
+    + 'Processo nº: ' + val('numero_processo') + '\n'
+    + 'Autor: ' + val('autor') + '\n'
+    + 'Advogado credor: ' + val('advogado') + '\n'
+    + 'Valor de Face: ' + faces.join(' | ') + '\n\n'
+    + props.join('\n') + '\n\n'
+    + 'Data da Proposta: ' + dd + '\n'
+    + 'Observações: ' + obsHon + obsInss + '\n\n'
+    + 'O pagamento será realizado em até 24 (vinte e quatro) horas após a assinatura da Cessão de Crédito ou da Escritura Pública de Cessão, conforme aplicável.';
+}
+
 // ── Salvar Pipeline ────────────────────────────
 async function salvar(){
   if(!WH){ toast('Configure o webhook primeiro','err'); return; }
@@ -677,7 +706,8 @@ async function salvar(){
     status: window._revisao ? 'Negociação' : 'Proposta Enviada',
     revisao: window._revisao ? true : false,
     contra_proposta: window._revisao ? (num('contra_proposta_input') || window._contraPropostaVal || null) : null,
-    reopen_params: buildReopenParams()
+    reopen_params: buildReopenParams(),
+    whatsapp_msg: buildWhatsappMsg()
   };
   var btn = el('btnSalvar');
   btn.disabled=true; btn.textContent='⏳ Enviando...';
