@@ -208,10 +208,20 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 
   <div class="card">
     <div class="ct">📊 Negociação</div>
-    <div class="f" id="b_contra" style="display:none">
-      <label>📌 Contra-proposta do agente (R$)</label>
-      <input type="number" id="contra_proposta_input" placeholder="Valor que o agente pediu" min="0" step="0.01">
-      <div class="hint">Valor que o agente pediu. Ajuste o deságio abaixo para chegar perto e salve como revisão.</div>
+    <div class="f" id="b_final_autor" style="display:none">
+      <label>💰 Valor final Autor (R$)</label>
+      <input type="number" id="final_autor" placeholder="Ex: 16000,00" min="0" step="0.01" oninput="calcular()">
+      <div class="hint" id="hint_final_autor">Digite o valor que vai oferecer. Vira a proposta (vai pro contrato).</div>
+    </div>
+    <div class="f" id="b_final_hon" style="display:none">
+      <label>💰 Valor final Honorários (R$)</label>
+      <input type="number" id="final_hon" placeholder="Ex: 16000,00" min="0" step="0.01" oninput="calcular()">
+      <div class="hint" id="hint_final_hon">Digite o valor que vai oferecer. Vira a proposta (vai pro contrato).</div>
+    </div>
+    <div class="f" id="b_final_suc" style="display:none">
+      <label>💰 Valor final Sucumbência (R$)</label>
+      <input type="number" id="final_suc" placeholder="Ex: 16000,00" min="0" step="0.01" oninput="calcular()">
+      <div class="hint" id="hint_final_suc">Digite o valor que vai oferecer. Vira a proposta (vai pro contrato).</div>
     </div>
     <div class="f" id="b_da" style="display:none"><label>% Deságio Autor</label>
       <input type="number" id="desagio_autor" placeholder="Ex: 35" min="0" max="100" step="0.1" oninput="calcular()">
@@ -405,10 +415,8 @@ function normalizaTipo(raw){
   if(window._revisao && !isNaN(contraVal) && contraVal > 0) {
     window._contraPropostaVal = contraVal;
   }
-  // Modo revisão: mostra a caixinha de contra-proposta e marca a página
+  // Modo revisão: marca a página (os campos de valor final aparecem via atualizarCampos)
   if(window._revisao){
-    el('b_contra').style.display = '';
-    if(window._contraPropostaVal) el('contra_proposta_input').value = window._contraPropostaVal;
     document.title = '🔄 Revisão — ' + document.title;
   }
 
@@ -476,7 +484,10 @@ function atualizarCampos(){
   temHon      ? show('b_val_hon')  : hide('b_val_hon');
   temSuc      ? show('b_val_suc')  : hide('b_val_suc');
 
-  // Negociação — deságios
+  // Negociação — valor final manual (só em revisão) + deságios
+  (window._revisao && temAutor) ? show('b_final_autor') : hide('b_final_autor');
+  (window._revisao && temHon)   ? show('b_final_hon')   : hide('b_final_hon');
+  (window._revisao && temSuc)   ? show('b_final_suc')   : hide('b_final_suc');
   temAutor  ? show('b_da') : hide('b_da');
   temDesAdv ? show('b_dd') : hide('b_dd');
 
@@ -520,6 +531,18 @@ function mesesAte(dateStr){
   return dias / 30;
 }
 
+// ── Hint do valor final (deságio/taxa efetivo) ──
+function atualizarHintFinal(tipo, valor, proposta, face, taxa){
+  var elh = el('hint_final_'+tipo); if(!elh) return;
+  if(valor > 0 && face > 0){
+    var desagio = (1 - proposta/face) * 100;
+    var txTaxa = (taxa !== null && taxa !== undefined) ? ' | ≈ ' + taxa.toFixed(2) + '% a.m.' : '';
+    elh.textContent = '↳ deságio efetivo ' + desagio.toFixed(1) + '%' + txTaxa + ' (informativo)';
+  } else {
+    elh.textContent = 'Digite o valor que vai oferecer. Vira a proposta (vai pro contrato).';
+  }
+}
+
 // ── Calcular ───────────────────────────────────
 function calcular(){
   var sent = num('valor_sentenca');
@@ -547,10 +570,25 @@ function calcular(){
   var pH = (vH   * (1 - dad) - deH) * (1 - ir);
   var pS = (sucV * (1 - dad) - deS) * (1 - ir);
 
+  // Revisão: valor final manual por tipo sobrescreve a proposta (vira o que vai pro contrato)
+  if(window._revisao){
+    var fA = num('final_autor'), fH = num('final_hon'), fS = num('final_suc');
+    if(fA > 0) pA = fA;
+    if(fH > 0) pH = fH;
+    if(fS > 0) pS = fS;
+  }
+
   // Taxas
   var tA = calcTaxa(meses, pA, vA);
   var tH = calcTaxa(meses, pH, vH);
   var tS = calcTaxa(meses, pS, sucV);
+
+  // Revisão: hint do valor final mostra deságio/taxa efetivo
+  if(window._revisao){
+    atualizarHintFinal('autor', num('final_autor'), pA, vA, tA);
+    atualizarHintFinal('hon',   num('final_hon'),   pH, vH, tH);
+    atualizarHintFinal('suc',   num('final_suc'),   pS, sucV, tS);
+  }
 
   // Intermediários
   el('val_autor').value = sent > 0 ? fmtN(vA) : '';
@@ -700,6 +738,9 @@ async function salvar(){
     proposta_autor:    window._revisao ? (window._origPA||null) : (TIPOS.has('autor')       ? r2(C.pA) : null),
     proposta_hon:      window._revisao ? (window._origPH||null) : (TIPOS.has('honorarios')  ? r2(C.pH) : null),
     proposta_suc:      window._revisao ? (window._origPS||null) : (TIPOS.has('sucumbencia') ? r2(C.pS) : null),
+    proposta_final_autor: (window._revisao && TIPOS.has('autor')       && num('final_autor') > 0) ? r2(C.pA) : null,
+    proposta_final_hon:   (window._revisao && TIPOS.has('honorarios')  && num('final_hon')   > 0) ? r2(C.pH) : null,
+    proposta_final_suc:   (window._revisao && TIPOS.has('sucumbencia') && num('final_suc')   > 0) ? r2(C.pS) : null,
     taxa_autor:        C.tA !== null ? r2(C.tA) : null,
     taxa_hon:          C.tH !== null ? r2(C.tH) : null,
     taxa_suc:          C.tS !== null ? r2(C.tS) : null,
@@ -707,7 +748,7 @@ async function salvar(){
     data_proposta: hoje,
     status: window._revisao ? 'Negociação' : 'Proposta Enviada',
     revisao: window._revisao ? true : false,
-    contra_proposta: window._revisao ? (num('contra_proposta_input') || window._contraPropostaVal || null) : null,
+    contra_proposta: window._revisao ? (window._contraPropostaVal || null) : null,
     reopen_params: buildReopenParams(),
     whatsapp_msg: buildWhatsappMsg()
   };
