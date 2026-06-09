@@ -258,19 +258,19 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
   <div id="res_autor" style="display:none" class="ri">
     <div class="rl">Proposta Autor</div>
     <div class="rv" id="rv_a">R$ —</div>
-    <div class="rf">= Val. Autor × (1 − IR) × (1 − Deság. Autor) − Despesas Cartório</div>
+    <div class="rf">= Val. Autor × (1 − Deság. Autor − IR) − Despesas Cartório</div>
     <div class="rtx">Taxa efetiva: <span id="rtx_a">—</span></div>
   </div>
   <div id="res_hon" style="display:none" class="ri">
     <div class="rl">Proposta Honorários</div>
     <div class="rv" id="rv_h">R$ —</div>
-    <div class="rf">= Val. Hon. × (1 − IR) × (1 − Deság. Adv.) − Despesas Cartório</div>
+    <div class="rf">= Val. Hon. × (1 − Deság. Adv. − IR) − Despesas Cartório</div>
     <div class="rtx">Taxa efetiva: <span id="rtx_h">—</span></div>
   </div>
   <div id="res_suc" style="display:none" class="ri">
     <div class="rl">Proposta Sucumbência</div>
     <div class="rv" id="rv_s">R$ —</div>
-    <div class="rf">= Val. Suc. × (1 − IR) × (1 − Deság. Adv.) − Despesas Cartório</div>
+    <div class="rf">= Val. Suc. × (1 − Deság. Adv. − IR) − Despesas Cartório</div>
     <div class="rtx">Taxa efetiva: <span id="rtx_s">—</span></div>
   </div>
 </div>
@@ -565,10 +565,10 @@ function calcular(){
   var vA = sent * (1 - ph);
   var vH = sent * ph;
 
-  // Propostas — IR abate sobre a FACE de cada tipo (antes do deságio); despesa sai no fim
-  var pA = vA   * (1 - ir) * (1 - da)  - deA;
-  var pH = vH   * (1 - ir) * (1 - dad) - deH;
-  var pS = sucV * (1 - ir) * (1 - dad) - deS;
+  // Propostas — deságio E IR ambos sobre a FACE cheia (subtraídos); despesa sai no fim
+  var pA = vA   * (1 - da  - ir) - deA;
+  var pH = vH   * (1 - dad - ir) - deH;
+  var pS = sucV * (1 - dad - ir) - deS;
 
   // Revisão: valor final manual por tipo sobrescreve a proposta (vira o que vai pro contrato)
   if(window._revisao){
