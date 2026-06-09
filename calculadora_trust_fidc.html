@@ -177,7 +177,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
     <div class="f" id="b_ir">
       <label>% Imposto de Renda</label>
       <input type="number" id="perc_ir" placeholder="Ex: 3" min="0" max="100" step="0.01" oninput="calcular()">
-      <div class="hint">Abate sobre a proposta final (depois das despesas), nos três tipos</div>
+      <div class="hint">Abate sobre o valor de face de cada tipo (antes do deságio)</div>
     </div>
 
     <!-- % Honorários: visível se Autor ou Honorários ativos -->
@@ -565,10 +565,10 @@ function calcular(){
   var vA = sent * (1 - ph);
   var vH = sent * ph;
 
-  // Propostas — Imposto de Renda abate sobre a proposta final (depois das despesas)
-  var pA = (vA   * (1 - da)  - deA) * (1 - ir);
-  var pH = (vH   * (1 - dad) - deH) * (1 - ir);
-  var pS = (sucV * (1 - dad) - deS) * (1 - ir);
+  // Propostas — IR abate sobre a FACE de cada tipo (antes do deságio); despesa sai no fim
+  var pA = vA   * (1 - ir) * (1 - da)  - deA;
+  var pH = vH   * (1 - ir) * (1 - dad) - deH;
+  var pS = sucV * (1 - ir) * (1 - dad) - deS;
 
   // Revisão: valor final manual por tipo sobrescreve a proposta (vira o que vai pro contrato)
   if(window._revisao){
