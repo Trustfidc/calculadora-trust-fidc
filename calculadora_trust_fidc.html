@@ -184,13 +184,15 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
     <div class="f" id="b_hon_pct">
       <label>% Honorários</label>
       <select id="perc_hon" onchange="calcular()">
-        <option value="30">30%</option>
+        <option value="">— sem honorários (deixar em branco)</option>
+        <option value="30" selected>30%</option>
         <option value="32">32%</option>
         <option value="35">35%</option>
         <option value="40">40%</option>
         <option value="45">45%</option>
         <option value="50">50%</option>
       </select>
+      <div class="hint">Em branco = não aplica honorários (o Autor recebe a sentença cheia).</div>
     </div>
 
     <div class="sep" id="b_sep1"></div>
@@ -392,8 +394,11 @@ function normalizaTipo(raw){
   if(irp === null) irp = p.get('perc_ir');
   if(irp && parseFloat(irp) > 0){ el('perc_ir').value = parseFloat(irp); el('perc_ir').style.background='#f0fdf4'; hit=true; }
   // Demais valores para reabrir preenchido (revisão)
-  var phn = p.get('perc_hon');
-  if(phn && parseFloat(phn) > 0){ el('perc_hon').value = parseFloat(phn); hit=true; }
+  if(p.has('perc_hon')){
+    var phn = p.get('perc_hon');
+    el('perc_hon').value = (phn && parseFloat(phn) > 0) ? String(parseFloat(phn)) : '';
+    hit=true;
+  }
   ['desp_autor','desp_hon','desp_suc'].forEach(function(idd){
     var dv = p.get(idd);
     if(dv && parseFloat(dv) > 0){ el(idd).value = parseFloat(dv); el(idd).style.background='#f0fdf4'; hit=true; }
@@ -546,7 +551,8 @@ function atualizarHintFinal(tipo, valor, proposta, face, taxa){
 // ── Calcular ───────────────────────────────────
 function calcular(){
   var sent = num('valor_sentenca');
-  var ph   = num('perc_hon') / 100;
+  var honBlank = (val('perc_hon') === '');   // % Honorários em branco = não aplicar honorários
+  var ph   = honBlank ? 0 : num('perc_hon') / 100;
   var irPct = num('perc_ir');
   var ir   = irPct / 100;
   var dap  = num('desagio_autor');
@@ -592,16 +598,16 @@ function calcular(){
 
   // Intermediários
   el('val_autor').value = sent > 0 ? fmtN(vA) : '';
-  el('val_hon').value   = sent > 0 ? fmtN(vH) : '';
+  el('val_hon').value   = (!honBlank && sent > 0) ? fmtN(vH) : '';
 
   // Resultados
   txt('rv_a', pA > 0 ? fmt(pA) : 'R$ —');
-  txt('rv_h', pH > 0 ? fmt(pH) : 'R$ —');
+  txt('rv_h', (!honBlank && pH > 0) ? fmt(pH) : 'R$ —');
   txt('rv_s', pS > 0 ? fmt(pS) : 'R$ —');
 
   var semPrazo = '(informe o prazo)';
   txt('rtx_a', tA !== null ? tA.toFixed(2)+'% a.m.' : semPrazo);
-  txt('rtx_h', tH !== null ? tH.toFixed(2)+'% a.m.' : semPrazo);
+  txt('rtx_h', honBlank ? '—' : (tH !== null ? tH.toFixed(2)+'% a.m.' : semPrazo));
   txt('rtx_s', tS !== null ? tS.toFixed(2)+'% a.m.' : semPrazo);
 
   // Resumo
@@ -611,7 +617,7 @@ function calcular(){
   txt('rs_sent', sent > 0 ? fmt(sent) : '—');
   txt('rs_ir', irPct > 0 ? irPct+'%' : '—');
   txt('rs_va',   sent > 0 ? fmt(vA)   : '—');
-  txt('rs_vh',   sent > 0 ? fmt(vH)   : '—');
+  txt('rs_vh',   (!honBlank && sent > 0) ? fmt(vH)   : '—');
   txt('rs_vs',   sucV > 0 ? fmt(sucV) : '—');
   txt('rs_da',   dap  > 0 ? dap+'%'   : '—');
   txt('rs_dd',   dadp > 0 ? dadp+'%'  : '—');
@@ -619,7 +625,7 @@ function calcular(){
   var despTotal = (TIPOS.has('autor') ? deA : 0) + (TIPOS.has('honorarios') ? deH : 0) + (TIPOS.has('sucumbencia') ? deS : 0);
   txt('rs_dea',  despTotal > 0 ? fmt(despTotal) : '—');
   txt('rs_pa',   pA > 0 ? fmt(pA) : '—');
-  txt('rs_ph',   pH > 0 ? fmt(pH) : '—');
+  txt('rs_ph',   (!honBlank && pH > 0) ? fmt(pH) : '—');
   txt('rs_ps',   pS > 0 ? fmt(pS) : '—');
   // Taxa efetiva: se múltiplos tipos, mostra o maior (mais conservador)
   var taxas = [];
@@ -630,7 +636,7 @@ function calcular(){
   txt('rs_ta', taxaMedia !== null ? taxaMedia.toFixed(2)+'% a.m. (média)' : semPrazo);
 
   // Salvar estado
-  C = {TIPOS: Array.from(TIPOS), sent, vA, vH, sucV, dap, dadp, deA, deH, deS, pA, pH, pS, tA, tH, tS, irPct};
+  C = {TIPOS: Array.from(TIPOS), sent, vA, vH, sucV, dap, dadp, deA, deH, deS, pA, pH, pS, tA, tH, tS, irPct, honBlank};
 }
 
 // ── Webhook ────────────────────────────────────
@@ -728,7 +734,7 @@ async function salvar(){
     imposto_renda: C.irPct || 0,
     valor_sentenca: C.sent,
     valor_autor: C.vA,
-    valor_honorarios: C.vH,
+    valor_honorarios: C.honBlank ? null : C.vH,
     valor_sucumbencia: C.sucV,
     desagio_autor: C.dap,
     desagio_adv: C.dadp,
@@ -736,7 +742,7 @@ async function salvar(){
     despesas_hon: C.deH,
     despesas_suc: C.deS,
     proposta_autor:    window._revisao ? (window._origPA||null) : (TIPOS.has('autor')       ? r2(C.pA) : null),
-    proposta_hon:      window._revisao ? (window._origPH||null) : (TIPOS.has('honorarios')  ? r2(C.pH) : null),
+    proposta_hon:      C.honBlank ? null : (window._revisao ? (window._origPH||null) : (TIPOS.has('honorarios')  ? r2(C.pH) : null)),
     proposta_suc:      window._revisao ? (window._origPS||null) : (TIPOS.has('sucumbencia') ? r2(C.pS) : null),
     proposta_final_autor: (window._revisao && TIPOS.has('autor')       && num('final_autor') > 0) ? r2(C.pA) : null,
     proposta_final_hon:   (window._revisao && TIPOS.has('honorarios')  && num('final_hon')   > 0) ? r2(C.pH) : null,
