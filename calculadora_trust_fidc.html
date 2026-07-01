@@ -183,16 +183,8 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
     <!-- % Honorários: visível se Autor ou Honorários ativos -->
     <div class="f" id="b_hon_pct">
       <label>% Honorários</label>
-      <select id="perc_hon" onchange="calcular()">
-        <option value="">— sem honorários (deixar em branco)</option>
-        <option value="30" selected>30%</option>
-        <option value="32">32%</option>
-        <option value="35">35%</option>
-        <option value="40">40%</option>
-        <option value="45">45%</option>
-        <option value="50">50%</option>
-      </select>
-      <div class="hint">Em branco = não aplica honorários (o Autor recebe a sentença cheia).</div>
+      <input type="number" id="perc_hon" placeholder="Ex: 30" min="0" step="0.01" oninput="calcular()">
+      <div class="hint">Digite o percentual (ex: 30). Em branco = sem honorários (o Autor recebe a sentença cheia).</div>
     </div>
 
     <div class="sep" id="b_sep1"></div>
