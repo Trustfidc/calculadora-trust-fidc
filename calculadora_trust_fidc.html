@@ -790,6 +790,7 @@ async function salvar(){
     valor_sentenca: C.sent,
     valor_autor: C.vA,
     valor_honorarios: C.honBlank ? null : C.vH,
+    perc_honorarios: C.honBlank ? null : num('perc_hon'),  // % que a Vanessa digita (ex: 30) → Pipeline "% Honorários Contratuais"
     valor_sucumbencia: C.sucV,
     desagio_autor: C.dap,
     desagio_adv: C.dadp,
