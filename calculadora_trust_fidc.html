@@ -462,6 +462,8 @@ function normalizaTipo(raw){
   if(pz && pz !== 'NaN' && pz !== ''){ el('prazo').value = pz; hit=true; }
   var hd = p.get('hon_destacados');
   if(hd){ el('hon_destacados').value = hd; }
+  var oi = p.get('obs_inss');
+  if(oi && ['Homologou','Não Homologou','N/A'].indexOf(oi) >= 0){ el('obs_inss').value = oi; }
 
   // Ler record_id do Airtable da URL
   var rid = p.get('record_id');
@@ -727,7 +729,8 @@ function buildReopenParams(){
     desp_hon: val('desp_hon'),
     desp_suc: val('desp_suc'),
     prazo: val('prazo'),
-    hon_destacados: val('hon_destacados')
+    hon_destacados: val('hon_destacados'),
+    obs_inss: val('obs_inss') // 21/10: portal do agente mostra "Homologado" a partir daqui
   };
   return Object.keys(fields).filter(function(k){ return fields[k] !== '' && fields[k] != null; })
     .map(function(k){ return k + '=' + encodeURIComponent(fields[k]); }).join('&');
