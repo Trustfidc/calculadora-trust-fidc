@@ -64,8 +64,9 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 .f{margin-bottom:10px;}
 .f:last-child{margin-bottom:0;}
 .f label{display:block;font-size:11px;font-weight:bold;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;}
-.f input,.f select{width:100%;border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:14px;color:#1a1a2e;background:white;}
-.f input:focus,.f select:focus{outline:none;border-color:#c9a84c;box-shadow:0 0 0 2px #c9a84c22;}
+.f input,.f select,.f textarea{width:100%;border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:14px;color:#1a1a2e;background:white;}
+.f textarea{font-family:inherit;resize:vertical;}
+.f input:focus,.f select:focus,.f textarea:focus{outline:none;border-color:#c9a84c;box-shadow:0 0 0 2px #c9a84c22;}
 .f input[readonly]{background:#f9fafb;color:#374151;cursor:default;border-color:#e5e7eb;font-weight:bold;}
 .f .hint{font-size:10px;color:#9ca3af;margin-top:2px;}
 .f-desp label{color:#b45309;}
@@ -216,6 +217,11 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
     <div class="f">
       <label>Hon. Destacados</label>
       <select id="hon_destacados"><option value="Não">Não</option><option value="Sim">Sim</option></select>
+    </div>
+    <!-- 21/10 (Vanessa): nota livre que o agente também vê no portal (≠ Observações internas do Pipeline) -->
+    <div class="f">
+      <label>Observação da proposta (o agente vê)</label>
+      <textarea id="obs_proposta" rows="3" maxlength="500" placeholder="Opcional — ex.: cessão parcial, algo pra lembrar no contrato"></textarea>
     </div>
   </div>
 
@@ -464,6 +470,8 @@ function normalizaTipo(raw){
   if(hd){ el('hon_destacados').value = hd; }
   var oi = p.get('obs_inss');
   if(oi && ['Homologou','Não Homologou','N/A'].indexOf(oi) >= 0){ el('obs_inss').value = oi; }
+  var op = p.get('obs_proposta'); // 21/10 (Vanessa): 🔄 Revisar volta com a observação da proposta
+  if(op){ el('obs_proposta').value = op.slice(0, 500); }
 
   // Ler record_id do Airtable da URL
   var rid = p.get('record_id');
@@ -730,11 +738,15 @@ function buildReopenParams(){
     desp_suc: val('desp_suc'),
     prazo: val('prazo'),
     hon_destacados: val('hon_destacados'),
-    obs_inss: val('obs_inss') // 21/10: portal do agente mostra "Homologado" a partir daqui
+    obs_inss: val('obs_inss'), // 21/10: portal do agente mostra "Homologado" a partir daqui
+    obs_proposta: obsProposta() // 21/10 (Vanessa): 🔄 Revisar volta com a observação
   };
   return Object.keys(fields).filter(function(k){ return fields[k] !== '' && fields[k] != null; })
     .map(function(k){ return k + '=' + encodeURIComponent(fields[k]); }).join('&');
 }
+
+// 21/10 (Vanessa): observação da proposta aparada ('' quando vazia), no máximo 500 caracteres
+function obsProposta(){ return String(val('obs_proposta') || '').trim().slice(0, 500); }
 
 // Formata número em R$ no padrão BR (1.234,56)
 function brl(n){ return (Math.round(n*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -751,6 +763,7 @@ function buildWhatsappMsg(){
   var obsHon = 'Honorários Destacados: ' + (val('hon_destacados') === 'Sim' ? 'Sim' : 'Não');
   var oi = val('obs_inss');
   var obsInss = oi === 'Homologou' ? ' | INSS Homologado: Sim' : (oi === 'Não Homologou' ? ' | INSS Homologado: Não' : ' | INSS: N/A');
+  var op = obsProposta();
   var dt = new Date();
   var dd = ('0'+dt.getDate()).slice(-2) + '/' + ('0'+(dt.getMonth()+1)).slice(-2) + '/' + dt.getFullYear();
   return 'PROPOSTA DE COMPRA DE CRÉDITO ' + val('tipo_credito') + '\n\n'
@@ -761,7 +774,8 @@ function buildWhatsappMsg(){
     + 'Valor de Face: ' + faces.join(' | ') + '\n\n'
     + props.join('\n') + '\n\n'
     + 'Data da Proposta: ' + dd + '\n'
-    + 'Observações: ' + obsHon + obsInss + '\n\n'
+    + 'Observações: ' + obsHon + obsInss + '\n'
+    + (op ? 'Observação: ' + op + '\n' : '') + '\n'
     + 'O pagamento será realizado em até 24 (vinte e quatro) horas após a assinatura da Cessão de Crédito ou da Escritura Pública de Cessão, conforme aplicável.';
 }
 
@@ -789,6 +803,7 @@ async function salvar(){
     tipo_credito: val('tipo_credito'),
     obs_inss: val('obs_inss'),
     hon_destacados: val('hon_destacados'),
+    obs_proposta: obsProposta(),      // 21/10 (Vanessa): → Pipeline "Observação da Proposta" (o agente vê; Make 4301791)
     imposto_renda: C.irPct || 0,
     valor_sentenca: C.sent,
     valor_autor: C.vA,
