@@ -227,6 +227,13 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
 
   <div class="card">
     <div class="ct">📊 Negociação</div>
+    <!-- 22/10 (Vanessa): no 🔄 Revisar, o que o agente pediu fica à vista — aceitar = usar o pedido no Valor final -->
+    <div id="b_contra" style="display:none;margin-bottom:12px;padding:12px 14px;border-radius:10px;border:2px solid #3b82f6;background:rgba(59,130,246,.12)">
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px">🤝 Contraproposta do agente</div>
+      <div id="contra_linhas" style="font-size:15px;line-height:1.6"></div>
+      <button type="button" id="contra_usar" onclick="usarContraproposta()" style="display:none;margin-top:8px;background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer">Usar o pedido do agente no Valor final</button>
+      <div class="hint" style="margin-top:6px">Para aceitar, use o pedido; para fazer outra oferta, digite o seu valor no Valor final.</div>
+    </div>
     <div class="f" id="b_final_autor" style="display:none">
       <label>💰 Valor final Autor (R$)</label>
       <input type="number" id="final_autor" placeholder="Ex: 16000,00" min="0" step="0.01" oninput="calcular()">
@@ -380,6 +387,26 @@ function num(id){ var v = parseFloat(el(id).value); return isNaN(v) ? 0 : v; }
 function val(id){ return el(id).value; }
 function txt(id,t){ el(id).textContent = t; }
 function show(id){ el(id).style.display = ''; }
+// 22/10 (Vanessa): quadro "Contraproposta do agente" no 🔄 Revisar. Por tipo quando o CRM manda; senão só o total.
+var CONTRA_TIPOS = [['autor','Autor','final_autor'],['hon','Honorários','final_hon'],['suc','Sucumbência','final_suc']];
+window._contraPorTipo = {};
+function mostrarContraproposta(p){
+  var linhas = [], total = 0;
+  CONTRA_TIPOS.forEach(function(t){
+    var v = parseFloat(p.get('contra_' + t[0]));
+    if(!isNaN(v) && v > 0){ window._contraPorTipo[t[0]] = v; total += v; linhas.push(t[1] + ': <b>' + fmt(v) + '</b>'); }
+  });
+  if(!linhas.length && window._contraPropostaVal > 0){ linhas.push('Total pedido: <b>' + fmt(window._contraPropostaVal) + '</b>'); }
+  else if(linhas.length > 1){ linhas.push('Total: <b>' + fmt(total) + '</b>'); }
+  if(!linhas.length) return;
+  el('contra_linhas').innerHTML = linhas.join('<br>');
+  if(Object.keys(window._contraPorTipo).length) el('contra_usar').style.display = '';
+  show('b_contra');
+}
+function usarContraproposta(){
+  CONTRA_TIPOS.forEach(function(t){ var v = window._contraPorTipo[t[0]]; if(v > 0) el(t[2]).value = v.toFixed(2); });
+  calcular();
+}
 function hide(id){ el(id).style.display = 'none'; }
 function fmt(n){ return 'R\u00a0' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtN(n){ return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -485,6 +512,8 @@ function normalizaTipo(raw){
   if(window._revisao && !isNaN(contraVal) && contraVal > 0) {
     window._contraPropostaVal = contraVal;
   }
+  // 22/10 (Vanessa): contraproposta POR TIPO (contra_autor/contra_hon/contra_suc) vinda do 🔄 do CRM → quadro à vista
+  if(window._revisao){ mostrarContraproposta(p); }
   // Modo revisão: marca a página (os campos de valor final aparecem via atualizarCampos)
   if(window._revisao){
     document.title = '🔄 Revisão — ' + document.title;
