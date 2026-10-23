@@ -141,6 +141,7 @@ button{cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:b
   </button>
 </div>
 <div class="tipo-hint">Clique para selecionar um ou mais tipos de crédito</div>
+<div class="tipo-hint" id="aviso_tipo_lead" style="display:none;color:#b45309;font-weight:600"></div>
 
 <!-- IDENTIFICAÇÃO -->
 <div class="card">
@@ -540,7 +541,48 @@ function normalizaTipo(raw){
     window._origPH = TIPOS.has('honorarios')  ? r2(C.pH) : null;
     window._origPS = TIPOS.has('sucumbencia') ? r2(C.pS) : null;
   }
+  avisoTipoDoLead();
 })();
+
+// ── 23/10 (Vanessa): o processo é de UM tipo (o que o agente pediu, campo Tipo de Crédito) mas a calculadora está em
+// OUTRO (ex.: Sucumbência calculada como Honorários 100%). O CRM, o portal e o aviso ao agente leem o campo do tipo do
+// PROCESSO — então a proposta/valor final vai também pra chave desse tipo. Só quando o processo tem um tipo só, a
+// calculadora não tem esse tipo ativo e há exatamente um valor calculado (sem adivinhar). Dativo conta como Honorários.
+var CHAVE_PROPOSTA = { autor: 'proposta_autor', honorarios: 'proposta_hon', sucumbencia: 'proposta_suc' };
+var CHAVE_FINAL    = { autor: 'proposta_final_autor', honorarios: 'proposta_final_hon', sucumbencia: 'proposta_final_suc' };
+function tiposDoLead(credito){
+  return String(credito || '').split(',').map(function(t){
+    var x = t.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if(!x) return null;
+    if(x.indexOf('honor') >= 0 || x.indexOf('dativo') >= 0) return 'honorarios';
+    if(x.indexOf('suc') >= 0) return 'sucumbencia';
+    if(x.indexOf('autor') >= 0) return 'autor';
+    return null;
+  }).filter(function(t){ return t; });
+}
+// Devolve o tipo do processo que precisa receber o valor, ou null quando não há o que rotear.
+function tipoParaRotear(tiposCalc, credito){
+  var lead = tiposDoLead(credito);
+  if(lead.length !== 1 || tiposCalc.has(lead[0])) return null;
+  return lead[0];
+}
+function rotearPorTipoDoLead(payload, tiposCalc, credito){
+  var alvo = tipoParaRotear(tiposCalc, credito);
+  if(!alvo) return payload;
+  [CHAVE_PROPOSTA, CHAVE_FINAL].forEach(function(chaves){
+    var comValor = Object.keys(chaves).filter(function(t){ return payload[chaves[t]] != null; });
+    if(comValor.length === 1) payload[chaves[alvo]] = payload[chaves[comValor[0]]];
+  });
+  return payload;
+}
+var NOME_TIPO = { autor: 'Autor', honorarios: 'Honorários', sucumbencia: 'Sucumbência' };
+function avisoTipoDoLead(){
+  var box = el('aviso_tipo_lead'); if(!box) return;
+  var alvo = tipoParaRotear(TIPOS, val('tipo_credito'));
+  if(!alvo){ box.style.display = 'none'; box.textContent = ''; return; }
+  box.style.display = '';
+  box.textContent = '⚠️ O processo é ' + NOME_TIPO[alvo] + ' (pedido do agente). A proposta e o valor final vão ser gravados como ' + NOME_TIPO[alvo] + ' — é isso que o agente vê.';
+}
 
 // ── toggleTipo — clique nas abas ───────────────
 function toggleTipo(tipo){
@@ -553,6 +595,7 @@ function toggleTipo(tipo){
   atualizarBotoes();
   atualizarCampos();
   calcular();
+  avisoTipoDoLead();
 }
 
 // ── Atualiza visual dos botões ─────────────────
@@ -861,6 +904,7 @@ async function salvar(){
     reopen_params: buildReopenParams(),
     whatsapp_msg: buildWhatsappMsg()
   };
+  rotearPorTipoDoLead(payload, TIPOS, val('tipo_credito')); // 23/10: valor vai pro tipo do PROCESSO
   var btn = el('btnSalvar');
   btn.disabled=true; btn.textContent='⏳ Enviando...';
   try{
