@@ -455,10 +455,10 @@ function rotearPorTipoDoLead(payload, tiposCalc, credito){
 var NOME_TIPO = { autor: 'Autor', honorarios: 'Honorários', sucumbencia: 'Sucumbência' };
 function avisoTipoDoLead(){
   var box = el('aviso_tipo_lead'); if(!box) return;
-  var alvo = tipoParaRotear(TIPOS, val('tipo_credito'));
+  var alvo = tipoParaRotear(TIPOS, window._creditoLead || '');
   if(!alvo){ box.style.display = 'none'; box.textContent = ''; return; }
   box.style.display = '';
-  box.textContent = '⚠️ O processo é ' + NOME_TIPO[alvo] + ' (pedido do agente). A proposta e o valor final vão ser gravados como ' + NOME_TIPO[alvo] + ' — é isso que o agente vê.';
+  box.textContent = '⚠️ O agente cadastrou este processo como ' + NOME_TIPO[alvo] + '. Ao salvar, o processo passa a ser do tipo que está marcado aqui; se ele já tiver histórico de negociação como ' + NOME_TIPO[alvo] + ', o valor vai pra lá.';
 }
 
 // ── Init: ler params URL ───────────────────────
@@ -511,6 +511,7 @@ function avisoTipoDoLead(){
   }
 
   if(p.get('credito')){ el('tipo_credito').value = decodeURIComponent(p.get('credito').replace(/\+/g,' ')); hit=true; }
+  window._creditoLead = val('tipo_credito'); // 23/10: tipo do PROCESSO (cadastro do agente) — o roteamento usa este
 
   // Valores financeiros (para revisão)
   var da = p.get('desagio_autor');
@@ -586,6 +587,7 @@ function avisoTipoDoLead(){
 
 // ── toggleTipo — clique nas abas ───────────────
 function toggleTipo(tipo){
+  window._tipoMexido = true; // 23/10: a partir daqui o campo Tipo de Crédito segue as abas
   if(TIPOS.has(tipo)){
     // Só remove se não for o último ativo
     if(TIPOS.size > 1) TIPOS.delete(tipo);
@@ -603,8 +605,9 @@ function atualizarBotoes(){
   ['autor','honorarios','sucumbencia'].forEach(function(t){
     el('tb-'+t).className = 'tbtn' + (TIPOS.has(t) ? ' active' : '');
   });
-  // Atualiza campo tipo_credito se não veio da URL
-  if(!new URLSearchParams(location.search).get('credito')){
+  // 23/10 (Vanessa): o campo Tipo de Crédito segue o que ELA deixa marcado (o agente cadastra errado e ela corrige aqui);
+  // o robô do CRM lê o tipo do snapshot e acerta o processo. Na abertura, o valor da URL fica até o 1º clique nas abas.
+  if(!new URLSearchParams(location.search).get('credito') || window._tipoMexido){
     var lab = {autor:'Autor', honorarios:'Honorários', sucumbencia:'Sucumbência'};
     var labels = Array.from(TIPOS).map(function(t){ return lab[t]; });
     el('tipo_credito').value = labels.join(', ');
@@ -904,7 +907,7 @@ async function salvar(){
     reopen_params: buildReopenParams(),
     whatsapp_msg: buildWhatsappMsg()
   };
-  rotearPorTipoDoLead(payload, TIPOS, val('tipo_credito')); // 23/10: valor vai pro tipo do PROCESSO
+  rotearPorTipoDoLead(payload, TIPOS, window._creditoLead || ''); // 23/10: valor vai também pro tipo do PROCESSO (cadastro do agente)
   var btn = el('btnSalvar');
   btn.disabled=true; btn.textContent='⏳ Enviando...';
   try{
